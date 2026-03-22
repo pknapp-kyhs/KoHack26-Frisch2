@@ -4,6 +4,7 @@ Provides routes for sign-in, registration, and a protected dashboard.
 """
 
 from flask import Flask, render_template, url_for, redirect, request, session
+from flask_socketio import SocketIO
 import PyPDF2
 import re
 from urllib.parse import quote
@@ -321,6 +322,34 @@ def texts():
             braille = "".join(braille_map.get(char.lower(), char) for char in text)
     # Render the page with either converted output or an empty result area.
     return render_template("texts.html", braille=braille)
+
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# --- VOSK SETUP ---
+# Ensure your model folder is in the same directory
+model = vosk.Model("vosk-model-small-en-us-0.15") 
+rec = vosk.KaldiRecognizer(model, 16000)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@socketio.on('audio_stream')
+def handle_audio(data):
+    """
+    This function receives the raw binary bytes from the webpage 
+    and passes them directly into Vosk.
+    """
+    if rec.AcceptWaveform(data):
+        # This is a final result (sentence finished)
+        result = json.loads(rec.Result())
+        print(f"User asked: {result['text']}")
+        socketio.emit('transcript_result', result['text'])
+    else:
+        # This is a partial result (live updates)
+        partial = json.loads(rec.PartialResult())
+        if partial['partial']:
+            print(f"Partial: {partial['partial']}")
 
 @app.route("/tefilla/", methods=["GET","POST"])
 def tefilla():
