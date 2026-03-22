@@ -1,7 +1,10 @@
 ### All comments done by built in github copilot for the benefit of the teammates ###
+import pyttsx3
+import transliteration
 import vosk
 import pyaudio
 import json
+###STT initialization ###
 model_path = "vosk-model-small-en-us-0.15" #Vosk model path
 model = vosk.Model(model_path) #inits model
 recognizer = vosk.KaldiRecognizer(model, 16000) # open recognizer with model and sample rate
@@ -16,6 +19,26 @@ def listen():        #listens to mic and returns text
         if text:
             return text
         return None
+### TTS initialization ###
+engine = pyttsx3.init()
+voices = engine.getProperty('voices')
+for voice in voices:
+    if 'daniel' in voice.name.lower():
+        engine.setProperty('voice', voice.id)
+        break
+engine.setProperty('rate', 75)
+engine.setProperty('volume', 1.0)
+def speak(text):
+            try:
+                if stream:
+                    stream.stop_stream()
+                text=transliteration.transliterate(text)
+                engine.say(text)
+                engine.runAndWait()
+                if stream:
+                    stream.start_stream()
+            except Exception as e:
+                print(f"(TTS Error: {e})")
 if __name__ == "__main__": #checks if the script is run directly
     while True:
         text = listen()

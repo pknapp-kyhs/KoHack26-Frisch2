@@ -1,7 +1,11 @@
-import SpeechToText
+import STT_TTS
 import SefariaAPIDispatchCommand
-import TTS
 def STTTUTTTS():
-    text=SpeechToText.listen()
-    text=SefariaAPIDispatchCommand(text)
-    TTS.speak(text)
+    text=STT_TTS.listen()
+    if text:
+        print(text)
+        text=SefariaAPIDispatchCommand.dispatch_command(text)
+        print(text)
+        STT_TTS.speak(text)
+while True:
+    STTTUTTTS()
