@@ -70,6 +70,13 @@ def transliterate(text):
     i = 0
     while i < len(text):
         match_found = False
+
+        # Special case: transliterate the Tetragrammaton directly to Hashem
+        if text.startswith('\u05d9\u05d4\u05d5\u05d4', i):
+            result += 'hashem'
+            i += 4
+            continue
+
         for key in sorted_keys:
             if text.startswith(key, i):
                 result += HEBREW_PHONETIC_MAP[key]
