@@ -174,6 +174,8 @@ def dispatch_command(input):
             words[idx] = str(words_to_number(word))
         elif word in BOOK_NAMES:
             words[idx]=str(map_tanach_hebrew_to_english(word))
+        if not words[idx].isdigit() and not "on":
+            words[idx]=words[idx].capitalize
     cleaned_input= join_numbers_with_colon(words)
     return sefaria_api.sefaria_api(cleaned_input)
-print(dispatch_command("Rashi on bereshit one one"))
+print(dispatch_command("bereshit one one"))
