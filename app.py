@@ -60,12 +60,9 @@ def _load_secret_key():
 
 
 app = Flask(__name__)
-<<<<<<< HEAD
 # Secret key for session management (should be changed in production)
 app.secret_key = "RatherSecretStringHackersPleaseDon'tStealMeI'mTooCoolToStealTrustMe"
-=======
 app.secret_key = _load_secret_key()
->>>>>>> 037e5d25e146274b5eb4530c3ec134658a99003d
 
 # List to store user objects
 users = []
@@ -227,7 +224,7 @@ def dyslexia():
 def openSockets():
     return render_template('openVoiceLine.html')
 
-@socketio.on('audio_stream')
+# @socketio.on('audio_stream')
 # def handle_audio(data):
 #     STTTUTTTS.STTTUTTTS()
 #     return 
