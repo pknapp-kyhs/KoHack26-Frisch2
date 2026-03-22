@@ -63,6 +63,9 @@ def transliterate(text):
     Translates Hebrew text to English phonetic sounds using the dictionary.
     Note: This is a simplified transliterator.
     """
+    if text=="":
+        return None
+    text=text.replace('\u05d9\u05d4\u05d5\u05d4', "Hashem")
     # Sort keys by length descending to match combined characters (like Shin + dot) first
     sorted_keys = sorted(HEBREW_PHONETIC_MAP.keys(), key=len, reverse=True)
     
@@ -70,13 +73,6 @@ def transliterate(text):
     i = 0
     while i < len(text):
         match_found = False
-
-        # Special case: transliterate the Tetragrammaton directly to Hashem
-        if text.startswith('\u05d9\u05d4\u05d5\u05d4', i):
-            result += 'hashem'
-            i += 4
-            continue
-
         for key in sorted_keys:
             if text.startswith(key, i):
                 result += HEBREW_PHONETIC_MAP[key]
@@ -86,6 +82,7 @@ def transliterate(text):
         if not match_found:
             result += text[i] # Keep non-Hebrew characters as is
             i += 1
+        
     return result
 
 # Example Usage:

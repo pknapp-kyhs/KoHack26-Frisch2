@@ -2,7 +2,6 @@
 import requests  # This is our web browser tool. It fetches data from the internet.
 import re        # 're' stands for Regular Expressions. It is a powerful search-and-destroy tool for text.
 
-# 2. START THE INFINITE LOOP
 def sefaria_api(command):
     # 3. GO GET THE DATA
     # We go to Sefaria, ask for the text, and convert their response into a Python dictionary (JSON)

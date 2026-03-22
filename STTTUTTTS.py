@@ -7,5 +7,6 @@ def STTTUTTTS():
         text=SefariaAPIDispatchCommand.dispatch_command(text)
         print(text)
         STT_TTS.speak(text)
-while True:
-    STTTUTTTS()
+if __name__=='__main__':
+    while True:
+        STTTUTTTS()
