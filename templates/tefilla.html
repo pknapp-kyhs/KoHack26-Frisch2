@@ -5,7 +5,225 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Tefilla (Prayers)</h1>
-    <p>Prayer resources and materials will be displayed here.</p>
+    <h1>Tefilla</h1>
+
+    <form method="get">
+        <label for="prayer">Prayer:</label>
+        <select name="prayer" id="prayer">
+            {% for prayer in prayers %}
+                <option value="{{ prayer.ref }}" {% if prayer.ref == selected_prayer %}selected{% endif %}>
+                    {{ prayer.label }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit">Load</button>
+    </form>
+
+    <div style="margin-top: 16px;">
+        <label for="wpm-slider">Words per minute:</label>
+        <input type="range" id="wpm-slider" min="60" max="300" value="120">
+        <span id="wpm-value">120</span>
+    </div>
+
+    <div style="margin-top: 12px;">
+        <label for="show-transliteration">
+            <input type="checkbox" id="show-transliteration">
+            Show transliteration
+        </label>
+    </div>
+
+    <div style="margin-top: 12px;">
+        <button type="button" id="play-pause-button">Pause</button>
+        <button type="button" id="restart-button">Restart</button>
+    </div>
+
+    {% if error_message %}
+        <p>{{ error_message }}</p>
+    {% endif %}
+
+    <div id="prayer-reader" style="margin-top: 24px;"></div>
+
+    <script>
+        const prayerLines = {{ prayer_lines|tojson }};
+        const reader = document.getElementById("prayer-reader");
+        const wpmSlider = document.getElementById("wpm-slider");
+        const wpmValue = document.getElementById("wpm-value");
+        const showTransliterationCheckbox = document.getElementById("show-transliteration");
+        const playPauseButton = document.getElementById("play-pause-button");
+        const restartButton = document.getElementById("restart-button");
+        let currentLineIndex = 0;
+        let currentWordIndex = 0;
+        let timerId = null;
+        let isPlaying = prayerLines.length > 0;
+        let isSpeakingWord = false;
+
+        const getWords = (text) => text.split(/\s+/).filter(Boolean);
+
+        function renderPrayer() {
+            reader.innerHTML = "";
+            prayerLines.forEach(function (line, lineIndex) {
+                const lineWrapper = document.createElement("div");
+                const hebrewLine = document.createElement("div");
+                hebrewLine.dir = "rtl";
+                hebrewLine.style.fontSize = "2rem";
+                hebrewLine.style.marginBottom = "6px";
+
+                const hebrewWords = getWords(line.hebrew);
+                const transliterationWords = getWords(line.transliteration);
+
+                if (lineIndex < currentLineIndex) {
+                    hebrewLine.textContent = line.hebrew;
+                } else if (lineIndex === currentLineIndex) {
+                    hebrewWords.forEach(function (word, wordIndex) {
+                        if (wordIndex > currentWordIndex) return;
+                        const wordSpan = document.createElement("span");
+                        wordSpan.textContent = word + " ";
+                        if (wordIndex === currentWordIndex) wordSpan.style.fontWeight = "700";
+                        hebrewLine.appendChild(wordSpan);
+                    });
+                }
+
+                lineWrapper.appendChild(hebrewLine);
+
+                if (showTransliterationCheckbox.checked) {
+                    const transliterationLine = document.createElement("div");
+                    transliterationLine.style.marginBottom = "18px";
+                    transliterationLine.style.color = "#444";
+
+                    if (lineIndex < currentLineIndex) {
+                        transliterationLine.textContent = line.transliteration;
+                    } else if (lineIndex === currentLineIndex) {
+                        transliterationWords.forEach(function (word, wordIndex) {
+                            if (wordIndex > currentWordIndex) return;
+                            const wordSpan = document.createElement("span");
+                            wordSpan.textContent = word + " ";
+                            if (wordIndex === currentWordIndex) wordSpan.style.fontWeight = "700";
+                            transliterationLine.appendChild(wordSpan);
+                        });
+                    }
+
+                    lineWrapper.appendChild(transliterationLine);
+                } else {
+                    lineWrapper.style.marginBottom = "18px";
+                }
+
+                reader.appendChild(lineWrapper);
+            });
+        }
+
+        function stepForward() {
+            if (!prayerLines.length) return false;
+            const currentLineWords = getWords(prayerLines[currentLineIndex].hebrew);
+
+            if (currentWordIndex < currentLineWords.length - 1) {
+                currentWordIndex += 1;
+            } else if (currentLineIndex < prayerLines.length - 1) {
+                currentLineIndex += 1;
+                currentWordIndex = 0;
+            } else {
+                stopPlayback();
+                return false;
+            }
+
+            renderPrayer();
+            return true;
+        }
+
+        function stopPlayback() {
+            if (timerId !== null) {
+                clearTimeout(timerId);
+                timerId = null;
+            }
+            window.speechSynthesis.cancel();
+            isSpeakingWord = false;
+            isPlaying = false;
+            playPauseButton.textContent = "Play";
+        }
+
+        function speakCurrentWord() {
+            if (!isPlaying || !prayerLines.length || isSpeakingWord) return;
+            const transliterationWords = getWords(prayerLines[currentLineIndex].transliteration);
+            const wordToSpeak = transliterationWords[currentWordIndex];
+            if (!wordToSpeak) {
+                timerId = setTimeout(function () {
+                    if (stepForward()) speakCurrentWord();
+                }, 60000 / Number(wpmSlider.value));
+                return;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(wordToSpeak);
+            utterance.rate = Math.max(0.5, Math.min(2, Number(wpmSlider.value) / 120));
+            utterance.lang = "en-US";
+            isSpeakingWord = true;
+
+            utterance.onend = function () {
+                isSpeakingWord = false;
+                if (!isPlaying) return;
+                timerId = setTimeout(function () {
+                    if (stepForward()) speakCurrentWord();
+                }, 60000 / Number(wpmSlider.value));
+            };
+
+            utterance.onerror = function () {
+                isSpeakingWord = false;
+                if (!isPlaying) return;
+                timerId = setTimeout(function () {
+                    if (stepForward()) speakCurrentWord();
+                }, 60000 / Number(wpmSlider.value));
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function startPlayback() {
+            if (!prayerLines.length) return;
+            if (timerId !== null) {
+                clearTimeout(timerId);
+                timerId = null;
+            }
+            window.speechSynthesis.cancel();
+            isSpeakingWord = false;
+            isPlaying = true;
+            playPauseButton.textContent = "Pause";
+            renderPrayer();
+            speakCurrentWord();
+        }
+
+        function restartPlayback() {
+            currentLineIndex = 0;
+            currentWordIndex = 0;
+            renderPrayer();
+            startPlayback();
+        }
+
+        const updateWpmLabel = () => wpmValue.textContent = wpmSlider.value;
+
+        wpmSlider.addEventListener("input", function () {
+            updateWpmLabel();
+            if (isPlaying) startPlayback();
+        });
+
+        showTransliterationCheckbox.addEventListener("change", renderPrayer);
+
+        playPauseButton.addEventListener("click", function () {
+            if (isPlaying) {
+                stopPlayback();
+            } else {
+                startPlayback();
+            }
+        });
+
+        restartButton.addEventListener("click", restartPlayback);
+
+        updateWpmLabel();
+        renderPrayer();
+        if (prayerLines.length) {
+            startPlayback();
+        } else {
+            playPauseButton.disabled = true;
+            restartButton.disabled = true;
+        }
+    </script>
+
     <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
 {% endblock %}

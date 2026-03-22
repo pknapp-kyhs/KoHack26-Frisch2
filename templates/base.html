@@ -1,4 +1,4 @@
-<!-- Base Jinja Template -->
+<!-- Shared base template used by every page in the site. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,13 +6,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %}</title>
     <style>
+        @font-face {
+            font-family: "OpenDyslexic";
+            src: url("{{ url_for('static', filename='fonts/opendyslexic/OpenDyslexic-Regular.otf') }}") format("opentype");
+            font-style: normal;
+            font-weight: 400;
+        }
+
+        @font-face {
+            font-family: "OpenDyslexic";
+            src: url("{{ url_for('static', filename='fonts/opendyslexic/OpenDyslexic-Bold.otf') }}") format("opentype");
+            font-style: normal;
+            font-weight: 700;
+        }
+
+        @font-face {
+            font-family: "OpenDyslexic";
+            src: url("{{ url_for('static', filename='fonts/opendyslexic/OpenDyslexic-Italic.otf') }}") format("opentype");
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        @font-face {
+            font-family: "OpenDyslexic";
+            src: url("{{ url_for('static', filename='fonts/opendyslexic/OpenDyslexic-BoldItalic.otf') }}") format("opentype");
+            font-style: italic;
+            font-weight: 700;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: sans-serif;
+            margin: 24px;
+            font-family: Georgia, "Times New Roman", serif;
+            line-height: 1.5;
+        }
+
+        .toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        h1, h2 {
+            margin-top: 0;
+        }
+
+        .dyslexia-friendly {
+            font-family: "OpenDyslexic", Verdana, Arial, Helvetica, sans-serif;
+            font-size: 1.08rem;
+            line-height: 1.8;
+            letter-spacing: 0.03em;
+            word-spacing: 0.12em;
         }
     </style>
 </head>
 <body>
+    <label class="toggle" for="dyslexia-toggle">
+        <input type="checkbox" id="dyslexia-toggle">
+        <span>Dyslexia-friendly font</span>
+    </label>
+
     {% block content %}
     {% endblock %}
+
+    <script>
+        const dyslexiaToggle = document.getElementById('dyslexia-toggle');
+        const storedMode = localStorage.getItem('dyslexia-friendly-mode') === 'true';
+
+        function setDyslexiaMode(isEnabled) {
+            document.body.classList.toggle('dyslexia-friendly', isEnabled);
+            dyslexiaToggle.checked = isEnabled;
+            localStorage.setItem('dyslexia-friendly-mode', String(isEnabled));
+        }
+
+        setDyslexiaMode(storedMode);
+        dyslexiaToggle.addEventListener('change', function () {
+            setDyslexiaMode(dyslexiaToggle.checked);
+        });
+    </script>
 </body>
 </html>
