@@ -21,9 +21,13 @@ class User:
         self.username = username
         self.password = password
 
+
+def adduser(name, passwd):
+    user  = User(name, passwd)
+    users.append(user)
+
 # Create a default user for testing
-charles = User(username="Charles", password="Charles")
-users.append(charles)
+adduser("Charles", "Charles")
 
 def validate(user, usn, pw):
     """
@@ -120,7 +124,7 @@ def register():
         password = request.form["password"]
         if find_user(username) is not None:
             return redirect(url_for('index'))
-        users.append(User(username,password))
+        adduser(username, password)
         return redirect(url_for('index'))
     return render_template("register.html")
 
