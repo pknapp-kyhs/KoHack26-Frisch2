@@ -141,7 +141,7 @@ def signup():
         if find_user(username) is not None:
             return redirect(url_for('index'))
         adduser(username, password)
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard', username=username))
     return render_template("signup.html")
 @app.route("/braille/", methods=["GET","POST"])
 def braille():
