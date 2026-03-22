@@ -18,10 +18,18 @@ braille_map = {
 print("Braille Translator (English/Hebrew). Type 'q' to exit.")
 
 while True:
+# Prompt the user and convert input to lowercase to match dictionary keys
     text = input("\nEnter text: ").lower()
+
+    # Exit the loop if the user types 'q'
     if text == 'q': 
         break
     
-    # Translation Logic
+    # Translation Logic:
+    # 1. Loop through every character (char) in the input string (text).
+    # 2. Look up the char in 'braille_map'. If not found, keep the original char (get(char, char)).
+    # 3. Join all these translated characters into one single string ("".join).
     output = "".join(braille_map.get(char, char) for char in text)
+
+    # Display the final Braille string using an f-string for formatting
     print(f"Braille: {output}")
