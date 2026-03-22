@@ -3,16 +3,10 @@ import requests  # This is our web browser tool. It fetches data from the intern
 import re        # 're' stands for Regular Expressions. It is a powerful search-and-destroy tool for text.
 
 # 2. START THE INFINITE LOOP
-while True:
-    
-    # Ask the human what they want to read
-    query = input("\nWhat text? (e.g., Rashi on Genesis 1:1) or 'q' to quit: ")
-    if query == 'q': 
-        break
-    
+def sefaria_api(command):
     # 3. GO GET THE DATA
     # We go to Sefaria, ask for the text, and convert their response into a Python dictionary (JSON)
-    url = f"https://www.sefaria.org/api/texts/{query}?context=0"
+    url = f"https://www.sefaria.org/api/texts/{command}?context=0"
     data = requests.get(url).json()
     
     # Grab the raw English and Hebrew. 
@@ -37,6 +31,5 @@ while True:
     clean_hebrew = re.sub(r'<[^>]+>', ' ', raw_hebrew)
     
     # 6. SHOW THE HUMAN THE RESULTS
-    print("\nHEBREW:", clean_hebrew)
-    print("\nENGLISH:", clean_english)
-  
+    results = f"Hebrew:\n{clean_hebrew}\n\nEnglish:\n{clean_english}"
+    return results
