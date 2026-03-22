@@ -82,7 +82,6 @@ if __name__ == "__main__":
     test_word = "שָׁלוֹם" # Shalom
     print(f"Hebrew: {test_word}")
     print(f"Transliterated: {transliterate(test_word)}")
-    
     test_word_2 = "יִשְׂרָאֵל" # Israel
     print(f"Hebrew: {test_word_2}")
     print(f"Transliterated: {transliterate(test_word_2)}")
