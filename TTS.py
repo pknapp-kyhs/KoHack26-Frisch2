@@ -20,4 +20,3 @@ if __name__=="__main__":
     speak(test_word)
     print(test_word)
 
-            
