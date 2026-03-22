@@ -93,7 +93,7 @@ def signin():
             return "Invalid credentials!"
 
         else:
-            return redirect(url_for("register"))
+            return redirect(url_for("signup"))
 
     return render_template("signin.html")
 
@@ -111,13 +111,13 @@ def dashboard():
     else:
         return redirect(url_for('signin'))
 
-@app.route("/register/", methods=["GET","POST"])
-def register():
+@app.route("/signup/", methods=["GET","POST"])
+def signup():
     """
-    Handles user registration. Creates a new user if username is available.
+    Handles user signup. Creates a new user if username is available.
     
     Returns:
-        str: Rendered register template or redirect response.
+        str: Rendered signup template or redirect response.
     """
     if request.method == "POST":
         username = request.form["username"]
@@ -126,8 +126,25 @@ def register():
             return redirect(url_for('index'))
         adduser(username, password)
         return redirect(url_for('index'))
-    return render_template("register.html")
+    return render_template("signup.html")
+@app.route("/braille/", methods=["GET","POST"])
+def braille():
+    """Handle braille route."""
+    return render_template("braille.html")
 
+@app.route("/texts/", methods=["GET","POST"])
+def texts():
+    """Handle texts route."""
+    return render_template("texts.html")
 
+@app.route("/tefilla/", methods=["GET","POST"])
+def tefilla():
+    """Handle tefilla route."""
+    return render_template("tefilla.html")
+
+@app.route("/dyslexia/", methods=["GET","POST"])
+def dyslexia():
+    """Handle dyslexia route."""
+    return render_template("dyslexia.html")
 # Run the Flask application on all interfaces at port 5050
 app.run(host="0.0.0.0",port=5050)
