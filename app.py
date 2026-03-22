@@ -11,8 +11,6 @@ class User:
         self.username = username
         self.password = password
 
-
-=
 charles = User(username="Charles", password="Charles")
 users.append(charles)
 
@@ -40,7 +38,6 @@ def signin():
 
         user_index = find_user(usn)
 
-<<<<<<< HEAD
         if user_index is not None and validate(users[user_index], usn, passw):
             session["username"] = usn
             return redirect(url_for("dashboard"))
@@ -74,7 +71,3 @@ def register():
 
 
 app.run(host="0.0.0.0",port=5050)
-=======
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
->>>>>>> 2bfe89d2e8a613f17a6303b8d9323684ebcbeeb7
