@@ -1,10 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Index</title>
-</head>
-<body>
-    hello there
-</body>
-</html>
+{% extends "layout.html" %}
+{% block content %}
+<div style="text-align: center; padding: 4rem 0;">
+    <h1 style="font-size: 3.5rem; font-weight: 800; margin-bottom: 1rem; letter-spacing: -0.025em; line-height: 1.1;">
+        Trade Like a <span style="color: var(--primary)">Professional</span>.
+    </h1>
+    <p style="font-size: 1.25rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 2.5rem;">
+        Master the markets with our high-performance trading platform. Real-time insights, seamless execution, and zero fees.
+    </p>
+    
+    {% if not current_user.is_authenticated %}
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <a href="{{ url_for('signup') }}" class="btn" style="width: auto; padding: 0.85rem 2.5rem;">Create Free Account</a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline" style="width: auto; padding: 0.85rem 2.5rem;">View Live Markets</a>
+        </div>
+    {% else %}
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <a href="{{ url_for('buy') }}" class="btn" style="width: auto; padding: 0.85rem 2.5rem;">Go to Markets</a>
+            <a href="{{ url_for('sell') }}" class="btn btn-outline" style="width: auto; padding: 0.85rem 2.5rem;">Manage Portfolio</a>
+        </div>
+    {% endif %}
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 4rem;">
+    <div class="card" style="padding: 1.5rem; text-align: center;">
+        <div style="background: #eff6ff; color: var(--primary); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3 style="margin-bottom: 0.5rem;">Instant Execution</h3>
+        <p style="color: var(--text-muted); font-size: 0.875rem;">Trade symbols instantly with our optimized order engine.</p>
+    </div>
+    <div class="card" style="padding: 1.5rem; text-align: center;">
+        <div style="background: #f0fdf4; color: var(--success); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3 style="margin-bottom: 0.5rem;">Bank-Grade Security</h3>
+        <p style="color: var(--text-muted); font-size: 0.875rem;">Your assets are protected with industry-leading encryption.</p>
+    </div>
+    <div class="card" style="padding: 1.5rem; text-align: center;">
+        <div style="background: #fdf2f8; color: #db2777; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <h3 style="margin-bottom: 0.5rem;">Diverse Assets</h3>
+        <p style="color: var(--text-muted); font-size: 0.875rem;">Access stocks, crypto, and ETFs from a single interface.</p>
+    </div>
+</div>
+{% endblock %}
