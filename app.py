@@ -4,7 +4,23 @@ Provides routes for sign-in, registration, and a protected dashboard.
 """
 
 from flask import Flask, render_template, url_for, redirect, request, session
+import PyPDF2
 
+# Braille map for English and Hebrew
+braille_map = {
+    # English
+    'a': '⠁', 'b': '⠃', 'c': '⠉', 'd': '⠙', 'e': '⠑', 'f': '⠋', 'g': '⠛', 'h': '⠓', 
+    'i': '⠊', 'j': '⠚', 'k': '⠅', 'l': '⠇', 'm': '⠍', 'n': '⠝', 'o': '⠕', 'p': '⠏', 
+    'q': '⠟', 'r': '⠗', 's': '⠎', 't': '⠞', 'u': '⠥', 'v': '⠧', 'w': '⠺', 'x': '⠭', 
+    'y': '⠽', 'z': '⠵',
+    # Hebrew
+    'א': '⠁', 'ב': '⠃', 'ג': '⠛', 'ד': '⠙', 'ה': '⠓', 'ו': '⠺', 'ז': '⠵', 'ח': '⠡', 
+    'ט': '⠞', 'י': '⠊', 'כ': '⠅', 'ך': '⠅', 'ל': '⠇', 'מ': '⠍', 'ם': '⠍', 'נ': '⠝', 
+    'ן': '⠝', 'ס': '⠎', 'ע': '⠯', 'פ': '⠏', 'ף': '⠏', 'צ': '⠯', 'ץ': '⠯', 'ק': '⠟', 
+    'ר': '⠗', 'ש': '⠮', 'ת': '⠕',
+    # Common
+    ' ': ' ', '.': '⠲', ',': '⠂', '?': '⠦', '!': '⠖'
+}
 
 app = Flask(__name__)
 # Secret key for session management (should be changed in production)
@@ -135,7 +151,24 @@ def braille():
 @app.route("/texts/", methods=["GET","POST"])
 def texts():
     """Handle texts route."""
-    return render_template("texts.html")
+    braille = None
+    if request.method == "POST":
+        text = ""
+        if 'text' in request.form:
+            text = request.form['text']
+        elif 'file' in request.files:
+            file = request.files['file']
+            if file.filename != '':
+                filename = file.filename.lower()
+                if filename.endswith('.txt'):
+                    text = file.read().decode('utf-8')
+                elif filename.endswith('.pdf'):
+                    pdf_reader = PyPDF2.PdfReader(file)
+                    for page in pdf_reader.pages:
+                        text += page.extract_text()
+        if text:
+            braille = "".join(braille_map.get(char.lower(), char) for char in text)
+    return render_template("texts.html", braille=braille)
 
 @app.route("/tefilla/", methods=["GET","POST"])
 def tefilla():
