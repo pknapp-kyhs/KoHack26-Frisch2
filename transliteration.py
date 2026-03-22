@@ -9,7 +9,10 @@ HEBREW_PHONETIC_MAP = {
     '\u05d2': 'g',   # Gimel
     '\u05d3': 'd',   # Dalet
     '\u05d4': 'h',   # He
-    '\u05d5': 'v',   # Vav
+    '\u05d5\u05b9': 'o', # Vav + Holam (vowel)
+    '\u05d5\u05bb': 'u', # Vav + Qubuts (vowel)
+    '\u05d5\u05bc\u05bb': 'u', # Vav + Dagesh + Qubuts (shuruk)
+    '\u05d5': 'v',   # Vav (consonant)
     '\u05d6': 'z',   # Zayin
     '\u05d7': 'ch',  # Het
     '\u05d8': 't',   # Tet
