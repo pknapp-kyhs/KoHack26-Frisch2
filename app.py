@@ -7,6 +7,9 @@ from flask import Flask, render_template, url_for, redirect, request, session
 import PyPDF2
 import re
 from urllib.parse import quote
+from pathlib import Path
+import secrets
+import os
 
 import requests
 
@@ -28,10 +31,32 @@ braille_map = {
     ' ': ' ', '.': '⠲', ',': '⠂', '?': '⠦', '!': '⠖'
 }
 
+def _get_secret_file():
+    env_path = os.environ.get("VIRTUAL_ENV")
+    if env_path:
+        venv_path = Path(env_path)
+    else:
+        venv_path = Path(__file__).resolve().parent / ".venv"
+    return venv_path / "flask_secret_key.txt"
+
+
+def _load_secret_key():
+    secret_path = _get_secret_file()
+    if secret_path.exists():
+        return secret_path.read_text().strip()
+
+    secret_path.parent.mkdir(parents=True, exist_ok=True)
+    new_secret = secrets.token_urlsafe(48)
+    secret_path.write_text(new_secret)
+    try:
+        secret_path.chmod(0o600)
+    except OSError:
+        pass
+    return new_secret
+
+
 app = Flask(__name__)
-# Secret key used by Flask sessions. This is fine for a demo, but it should come
-# from a secure environment variable in production.
-app.secret_key = "RatherSecretStringHackersPleaseDon'tStealMeI'mTooCoolToStealTrustMe"
+app.secret_key = _load_secret_key()
 
 # In-memory user storage for this prototype app.
 users = []
