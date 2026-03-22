@@ -42,7 +42,7 @@ MISHEARD_COMMENTARIES= [
     "evan as rough"
 ]
 NUMBER_WORDS = [
-    "zero","one","two","three","four","five",
+    "zero","one","two","to","too","three","four","five",
     "six","seven","eight","nine","ten",
     "eleven","twelve","thirteen","fourteen",
     "fifteen","sixteen","seventeen",
@@ -233,21 +233,27 @@ def convert_to_proper_mepharshim(input):
 "evan as rough":"ibn ezra",
 "eben ezra":"ibn ezra"
 }
-    for i in convert_to_proper_mepharshim:
+    for i in commentaryAliases:
         if i in input:
-            input= input.replace(i, convert_to_proper_mepharshim[i])
+            input = input.replace(i, commentaryAliases[i])
     return input
 def dispatch_command(input):
-    words = input.split()
-    for idx, word in enumerate(words):
-        if word in NUMBER_WORDS:
-            words[idx] = str(words_to_number(word))
-        elif word in BOOK_NAMES:
-            words[idx]=str(map_tanach_hebrew_to_english(word))
-        elif word in MISHEARD_COMMENTARIES:
-            words[idx]=str(convert_to_proper_mepharshim(word))
-        if not words[idx].isdigit() and not "on":
-            words[idx]=words[idx].capitalize
-    cleaned_input= join_numbers_with_colon(words)
-    return sefaria_api.sefaria_api(cleaned_input)
-print(dispatch_command("bereshit one one"))
+        input = convert_to_proper_mepharshim(input)
+        input = map_tanach_hebrew_to_english(input)
+
+        words = input.split()
+
+        for idx, word in enumerate(words):
+            if word in NUMBER_WORDS:
+                words[idx] = str(words_to_number(word))
+
+            if not words[idx].isdigit() and words[idx] != "on":
+                words[idx] = words[idx].capitalize()
+        
+        cleaned_input= join_numbers_with_colon(words)
+        if cleaned_input== False:
+            return "Try again"
+        try:
+            return sefaria_api.sefaria_api(cleaned_input)
+        except Exception as e:
+            print(e)
