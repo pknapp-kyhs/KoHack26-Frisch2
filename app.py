@@ -5,6 +5,12 @@ Provides routes for sign-in, registration, and a protected dashboard.
 
 from flask import Flask, render_template, url_for, redirect, request, session
 import PyPDF2
+import re
+from urllib.parse import quote
+
+import requests
+
+from transliteration import transliterate
 
 # Map supported English/Hebrew characters into Braille symbols for the converter page.
 braille_map = {
@@ -29,6 +35,23 @@ app.secret_key = "RatherSecretStringHackersPleaseDon'tStealMeI'mTooCoolToStealTr
 
 # In-memory user storage for this prototype app.
 users = []
+
+# Small starter list of prayer references for the tefilla page dropdown.
+# These values are sent directly to the Sefaria API.
+PRAYER_OPTIONS = [
+    {
+        "label": "Modeh Ani",
+        "ref": "Siddur Ashkenaz, Weekday, Shacharit, Preparatory Prayers, Modeh Ani"
+    },
+    {
+        "label": "Shema",
+        "ref": "Siddur Ashkenaz, Weekday, Shacharit, Blessings of the Shema, Shema"
+    },
+    {
+        "label": "Amidah",
+        "ref": "Siddur Ashkenaz, Weekday, Shacharit, Amidah"
+    }
+]
 
 class User:
     """
@@ -80,6 +103,111 @@ def find_user(name):
         if users[i].username==name:
             return i
     return None
+
+
+def clean_sefaria_text(text):
+    """
+    Convert Sefaria HTML into plain readable text while preserving line breaks.
+
+    Args:
+        text (str): Raw string returned by the Sefaria API.
+
+    Returns:
+        str: Cleaned text with minimal formatting.
+    """
+    # Treat HTML line breaks like real newlines before stripping the rest of the tags.
+    text = re.sub(r"<br\s*/?>", "\n", text)
+
+    # Remove every other HTML tag that may appear in the API response.
+    text = re.sub(r"<[^>]+>", "", text)
+
+    # Normalize whitespace inside each line but keep the line structure.
+    cleaned_lines = []
+    for line in text.splitlines():
+        normalized_line = re.sub(r"\s+", " ", line).strip()
+        if normalized_line:
+            cleaned_lines.append(normalized_line)
+
+    return "\n".join(cleaned_lines)
+
+
+def extract_lines_from_sefaria_content(content):
+    """
+    Flatten nested Sefaria content into a simple list of lines.
+
+    Args:
+        content (str | list): Hebrew content from the Sefaria API.
+
+    Returns:
+        list[str]: Plain-text prayer lines.
+    """
+    # Strings can be cleaned immediately and split into lines.
+    if isinstance(content, str):
+        cleaned_text = clean_sefaria_text(content)
+        if cleaned_text:
+            return cleaned_text.splitlines()
+        return []
+
+    # Lists may contain more lists or strings, so recurse through the structure.
+    if isinstance(content, list):
+        lines = []
+        for item in content:
+            lines.extend(extract_lines_from_sefaria_content(item))
+        return lines
+
+    # Any unsupported type is ignored so the page still renders safely.
+    return []
+
+
+def build_transliterated_lines(hebrew_lines):
+    """
+    Create a transliterated line for every Hebrew line.
+
+    Args:
+        hebrew_lines (list[str]): Clean Hebrew prayer lines.
+
+    Returns:
+        list[dict]: Line records used by the tefilla template and JavaScript.
+    """
+    line_records = []
+
+    # Pair each Hebrew line with a transliterated version so the browser can toggle it.
+    for line in hebrew_lines:
+        line_records.append(
+            {
+                "hebrew": line,
+                "transliteration": transliterate(line)
+            }
+        )
+
+    return line_records
+
+
+def get_prayer_text_from_sefaria(prayer_ref):
+    """
+    Fetch a prayer from the Sefaria API and return it as line records.
+
+    Args:
+        prayer_ref (str): Sefaria text reference selected by the user.
+
+    Returns:
+        list[dict]: Prayer lines with Hebrew and transliteration.
+    """
+    # Sefaria refs work best in URL paths with spaces converted to underscores while
+    # keeping commas readable, which matches how Sefaria builds its own text URLs.
+    encoded_ref = quote(prayer_ref.replace(" ", "_"), safe=",")
+    url = f"https://www.sefaria.org/api/texts/{encoded_ref}?context=0"
+
+    # Ask Sefaria for the prayer text and stop with an error if the request fails.
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+
+    # Read the Hebrew payload and flatten it into plain line-by-line text.
+    hebrew_lines = extract_lines_from_sefaria_content(data.get("he", []))
+
+    # Convert those lines into a structure that is easy to use in the template.
+    return build_transliterated_lines(hebrew_lines)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -197,8 +325,30 @@ def texts():
 @app.route("/tefilla/", methods=["GET","POST"])
 def tefilla():
     """Handle tefilla route."""
-    # This route currently serves a placeholder prayer resource page.
-    return render_template("tefilla.html")
+    # Default to the first prayer in the dropdown the first time the page is opened.
+    selected_prayer = request.args.get("prayer", PRAYER_OPTIONS[0]["ref"])
+
+    # Start with empty results so the template can render safely even if the API fails.
+    prayer_lines = []
+    error_message = None
+
+    try:
+        # Fetch the selected prayer from Sefaria and prepare it for playback.
+        prayer_lines = get_prayer_text_from_sefaria(selected_prayer)
+        if not prayer_lines:
+            error_message = "No prayer lines were returned for that selection."
+    except Exception:
+        # Keep the error simple for the user and avoid crashing the page.
+        error_message = "Could not load that prayer from Sefaria right now."
+
+    # Render the page with the dropdown choices and whichever prayer was selected.
+    return render_template(
+        "tefilla.html",
+        prayers=PRAYER_OPTIONS,
+        selected_prayer=selected_prayer,
+        prayer_lines=prayer_lines,
+        error_message=error_message
+    )
 
 # Run the development server on port 5050 and expose it to the local network.
 app.run(host="0.0.0.0",port=5050)
