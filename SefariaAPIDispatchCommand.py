@@ -14,6 +14,33 @@ def join_numbers_with_colon(words):
             result.append(words[i])
             i += 1
     return " ".join(result)
+MISHEARD_COMMENTARIES= [
+    "rossi",
+    "rashid",
+    "rocky",
+    "russia",
+    "my sector",
+    "random",
+    "run bomb",
+    "ron bomb",
+    "rom bomb",
+    "rom bond",
+    "run robin",
+    "wrong bond",
+    "run bond",
+    "sephora know",
+    "score now",
+    "for now",
+    "score know",
+    "so for now",
+    "bother",
+    "father",
+    "baba",
+    "eben ezra",
+    "even as or",
+    "ibanez rough",
+    "evan as rough"
+]
 NUMBER_WORDS = [
     "zero","one","two","three","four","five",
     "six","seven","eight","nine","ten",
@@ -167,6 +194,39 @@ def map_tanach_hebrew_to_english(hebrew):
         if i in hebrew:
             hebrew = hebrew.replace(i, hebrew_to_english[i])
     return hebrew
+def convert_to_proper_mepharshim(input):
+    commentaryAliases={
+"rossi":"rashi",
+"rashid":"rashi",
+"rocky":"rashi",
+"russia": "rashi",
+"my sector": "masechta",
+"random":"rambam",
+"run bomb":"rambam",
+"ron bomb":"rambam",
+"rom bomb":"rambam",
+"rom bond":"ramban",
+"run robin":"ramban",
+"wrong bond":"ramban",
+"run bond":"ramban",
+"sephora know": "seforno",
+"score now": "seforno",
+"for now": "seforno",
+"score know": "seforno",
+"so for now": "seforno",
+"bother": "bava",
+"father": "bava",
+"baba": "bava",
+"eben ezra":"ibn ezra",
+"even as or":"ibn ezra",
+"ibanez rough":"ibn ezra",
+"evan as rough":"ibn ezra",
+"eben ezra":"ibn ezra"
+}
+    for i in convert_to_proper_mepharshim:
+        if i in input:
+            input= input.replace(i, convert_to_proper_mepharshim[i])
+    return input
 def dispatch_command(input):
     words = input.split()
     for idx, word in enumerate(words):
@@ -174,6 +234,8 @@ def dispatch_command(input):
             words[idx] = str(words_to_number(word))
         elif word in BOOK_NAMES:
             words[idx]=str(map_tanach_hebrew_to_english(word))
+        elif word in MISHEARD_COMMENTARIES:
+            words[idx]=str(convert_to_proper_mepharshim(word))
         if not words[idx].isdigit() and not "on":
             words[idx]=words[idx].capitalize
     cleaned_input= join_numbers_with_colon(words)
