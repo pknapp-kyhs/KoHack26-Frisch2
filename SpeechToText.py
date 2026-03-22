@@ -8,7 +8,6 @@ recognizer = vosk.KaldiRecognizer(model, 16000) # open recognizer with model and
 p = pyaudio.PyAudio() #inits pyaudio
 stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=4000)#opens stream with format, channels, rate, input and frames per buffer
 stream.start_stream()#starts the stream
-
 def listen():        #listens to mic and returns text
     data = stream.read(4000, exception_on_overflow=False)#reads data from mic
     if recognizer.AcceptWaveform(data):#if data is recognized
