@@ -4,7 +4,23 @@ Provides routes for sign-in, registration, and a protected dashboard.
 """
 
 from flask import Flask, render_template, url_for, redirect, request, session
+import PyPDF2
 
+# Braille map for English and Hebrew
+braille_map = {
+    # English
+    'a': '⠁', 'b': '⠃', 'c': '⠉', 'd': '⠙', 'e': '⠑', 'f': '⠋', 'g': '⠛', 'h': '⠓', 
+    'i': '⠊', 'j': '⠚', 'k': '⠅', 'l': '⠇', 'm': '⠍', 'n': '⠝', 'o': '⠕', 'p': '⠏', 
+    'q': '⠟', 'r': '⠗', 's': '⠎', 't': '⠞', 'u': '⠥', 'v': '⠧', 'w': '⠺', 'x': '⠭', 
+    'y': '⠽', 'z': '⠵',
+    # Hebrew
+    'א': '⠁', 'ב': '⠃', 'ג': '⠛', 'ד': '⠙', 'ה': '⠓', 'ו': '⠺', 'ז': '⠵', 'ח': '⠡', 
+    'ט': '⠞', 'י': '⠊', 'כ': '⠅', 'ך': '⠅', 'ל': '⠇', 'מ': '⠍', 'ם': '⠍', 'נ': '⠝', 
+    'ן': '⠝', 'ס': '⠎', 'ע': '⠯', 'פ': '⠏', 'ף': '⠏', 'צ': '⠯', 'ץ': '⠯', 'ק': '⠟', 
+    'ר': '⠗', 'ש': '⠮', 'ת': '⠕',
+    # Common
+    ' ': ' ', '.': '⠲', ',': '⠂', '?': '⠦', '!': '⠖'
+}
 
 app = Flask(__name__)
 # Secret key for session management (should be changed in production)
@@ -93,7 +109,7 @@ def signin():
             return "Invalid credentials!"
 
         else:
-            return redirect(url_for("register"))
+            return redirect(url_for("signup"))
 
     return render_template("signin.html")
 
@@ -111,13 +127,13 @@ def dashboard():
     else:
         return redirect(url_for('signin'))
 
-@app.route("/register/", methods=["GET","POST"])
-def register():
+@app.route("/signup/", methods=["GET","POST"])
+def signup():
     """
-    Handles user registration. Creates a new user if username is available.
+    Handles user signup. Creates a new user if username is available.
     
     Returns:
-        str: Rendered register template or redirect response.
+        str: Rendered signup template or redirect response.
     """
     if request.method == "POST":
         username = request.form["username"]
@@ -125,9 +141,43 @@ def register():
         if find_user(username) is not None:
             return redirect(url_for('index'))
         adduser(username, password)
-        return redirect(url_for('index'))
-    return render_template("register.html")
+        return redirect(url_for('dashboard', username=username))
+    return render_template("signup.html")
+@app.route("/braille/", methods=["GET","POST"])
+def braille():
+    """Handle braille route."""
+    return render_template("braille.html")
 
+@app.route("/texts/", methods=["GET","POST"])
+def texts():
+    """Handle texts route."""
+    braille = None
+    if request.method == "POST":
+        text = ""
+        if 'text' in request.form:
+            text = request.form['text']
+        elif 'file' in request.files:
+            file = request.files['file']
+            if file.filename != '':
+                filename = file.filename.lower()
+                if filename.endswith('.txt'):
+                    text = file.read().decode('utf-8')
+                elif filename.endswith('.pdf'):
+                    pdf_reader = PyPDF2.PdfReader(file)
+                    for page in pdf_reader.pages:
+                        text += page.extract_text()
+        if text:
+            braille = "".join(braille_map.get(char.lower(), char) for char in text)
+    return render_template("texts.html", braille=braille)
 
+@app.route("/tefilla/", methods=["GET","POST"])
+def tefilla():
+    """Handle tefilla route."""
+    return render_template("tefilla.html")
+
+@app.route("/dyslexia/", methods=["GET","POST"])
+def dyslexia():
+    """Handle dyslexia route."""
+    return render_template("dyslexia.html")
 # Run the Flask application on all interfaces at port 5050
 app.run(host="0.0.0.0",port=5050)

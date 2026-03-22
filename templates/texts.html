@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Braille Source Sheets
+{% endblock %}
+
+{% block content %}
+    <!-- Page header -->
+    <h1>Braille Source Sheets</h1>
+
+    <!-- Buttons to choose input method: paste text or upload file -->
+    <button id="pasteBtn">Paste Text</button>
+    <button id="uploadBtn">Upload File</button>
+
+    <!-- Form for pasting text, hidden by default -->
+    <form id="textForm" method="post" enctype="multipart/form-data" style="display:none;">
+        <textarea name="text" rows="10" cols="50" placeholder="Paste your text here (English or Hebrew)"></textarea><br>
+        <button type="submit" name="action" value="convert">Convert to Braille</button>
+    </form>
+
+    <!-- Form for uploading a file, hidden by default -->
+    <form id="fileForm" method="post" enctype="multipart/form-data" style="display:none;">
+        <input type="file" name="file" accept=".txt,.pdf"><br>
+        <button type="submit" name="action" value="convert">Convert to Braille</button>
+    </form>
+
+    <!-- Display Braille output if conversion was performed -->
+    {% if braille %}
+    <h2>Braille Output:</h2>
+    <pre>{{ braille }}</pre>
+    <button onclick="downloadBraille()">Download Braille</button>
+    {% endif %}
+
+    <!-- Link back to dashboard -->
+    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+
+    <!-- JavaScript for toggling forms and downloading Braille -->
+    <script>
+        // Show text paste form when Paste Text button is clicked
+        document.getElementById('pasteBtn').onclick = function() {
+            document.getElementById('textForm').style.display = 'block';
+            document.getElementById('fileForm').style.display = 'none';
+        };
+        // Show file upload form when Upload File button is clicked
+        document.getElementById('uploadBtn').onclick = function() {
+            document.getElementById('fileForm').style.display = 'block';
+            document.getElementById('textForm').style.display = 'none';
+        };
+        // Function to download the Braille text as a file
+        function downloadBraille() {
+            const blob = new Blob([document.querySelector('pre').textContent], {type: 'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'braille.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+{% endblock %}
+
