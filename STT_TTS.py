@@ -4,6 +4,7 @@ import transliteration
 import vosk
 import pyaudio
 import json
+import time
 ###STT initialization ###
 model_path = "vosk-model-small-en-us-0.15" #Vosk model path
 model = vosk.Model(model_path) #inits model
@@ -17,13 +18,15 @@ def listen():        #listens to mic and returns text
         result = recognizer.Result()#gets result from recognizer
         text = json.loads(result)["text"]#extracts text from result
         if text:
+            print (text)
             return text
+        print(None)
         return None
 ### TTS initialization ###
 engine = pyttsx3.init()
 voices = engine.getProperty('voices')
 for voice in voices:
-    if 'daniel' in voice.name.lower():
+    if 'josh' in voice.name.lower():
         engine.setProperty('voice', voice.id)
         break
 engine.setProperty('rate', 75)
@@ -35,10 +38,13 @@ def speak(text):
                 text=transliteration.transliterate(text)
                 engine.say(text)
                 engine.runAndWait()
-                if stream:
-                    stream.start_stream()
+                
             except Exception as e:
                 print(f"(TTS Error: {e})")
+            finally:
+                 if stream:
+                    stream.start_stream()
+                    time.sleep(0.5)  # Short pause to prevent immediate self-listening
 if __name__ == "__main__": #checks if the script is run directly
     while True:
         text = listen()

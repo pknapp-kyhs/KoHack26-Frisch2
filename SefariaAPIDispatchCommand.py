@@ -204,6 +204,17 @@ def map_tanach_hebrew_to_english(hebrew):
         if i in hebrew:
             hebrew = hebrew.replace(i, hebrew_to_english[i])
     return hebrew
+def trim_noise(input_text):
+    words = input_text.split()
+    meaningful_idx = 0
+    for i, word in enumerate(words):
+        lower_word = word.lower()
+        if (lower_word in BOOK_NAMES or lower_word in NUMBER_WORDS or lower_word in convert_to_proper_mepharshim(word).lower()):
+            meaningful_idx = i
+            break
+
+    # Return the text starting from the first meaningful word
+    return " ".join(words[meaningful_idx:])
 def convert_to_proper_mepharshim(input):
     commentaryAliases={
 "rossi":"rashi",
@@ -238,6 +249,9 @@ def convert_to_proper_mepharshim(input):
             input = input.replace(i, commentaryAliases[i])
     return input
 def dispatch_command(input):
+        if input==None:
+            return "nothing was inputted"
+        input=trim_noise(input)
         input = convert_to_proper_mepharshim(input)
         input = map_tanach_hebrew_to_english(input)
 
@@ -249,11 +263,12 @@ def dispatch_command(input):
 
             if not words[idx].isdigit() and words[idx] != "on":
                 words[idx] = words[idx].capitalize()
-        
+        print(input)
         cleaned_input= join_numbers_with_colon(words)
-        if cleaned_input== False:
-            return "Try again"
         try:
-            return sefaria_api.sefaria_api(cleaned_input)
+            text=sefaria_api.sefaria_api(cleaned_input)
+            if text=="Hebrew:\n\n\nEnglish:\n":
+                return "Found the issue"
+            return text
         except Exception as e:
             print(e)

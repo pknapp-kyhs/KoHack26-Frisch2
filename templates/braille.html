@@ -6,9 +6,70 @@
 {% endblock %}
 
 {% block content %}
+<<<<<<< HEAD
+    <h1>Blind Learning</h1>
+    <p>Use your voice to search for pesukim and meforshim</p>
+
+    <h1>Voice Search</h1>
+    <button id="recordBtn">Click to Ask (Mic)</button>
+    <p>Status: <span id="status">Idle</span></p>
+    <p>Text: <span id="output">...</span></p>
+
+    <script>
+        const socket = io();
+        let audioContext;
+        let processor;
+        let microphone;
+
+        async function startStreaming() {
+            document.getElementById('status').innerText = "Listening...";
+            
+            // 1. Get Mic Access
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // 2. Set up Audio Processing (16kHz for Vosk)
+            audioContext = new AudioContext({ sampleRate: 16000 });
+            microphone = audioContext.createMediaStreamSource(stream);
+            processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+            microphone.connect(processor);
+            processor.connect(audioContext.destination);
+
+            // 3. Convert and Send Loop
+            processor.onaudioprocess = (e) => {
+                const inputData = e.inputBuffer.getChannelData(0);
+                const pcmData = new Int16Array(inputData.length);
+                
+                // Convert Float32 to Int16
+                for (let i = 0; i < inputData.length; i++) {
+                    pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
+                }
+                
+                // Stream the raw bytes to Python
+                socket.emit('audio_stream', pcmData.buffer);
+            };
+        }
+
+        document.getElementById('recordBtn').onclick = () => {
+            if (!audioContext) {
+                startStreaming();
+            } else {
+                location.reload(); // Simple toggle to stop
+            }
+        };
+
+        socket.on('transcript_result', (text) => {
+            document.getElementById('output').innerText = text;
+            document.getElementById('status').innerText = "Done!";
+        });
+    </script>
+
+    <p><br><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+=======
     <!-- Simple placeholder content until braille learning materials are added. -->
     <h1>Blind Learning - Braille Resources</h1>
     <p>Braille learning resources and materials will be displayed here.</p>
     <!-- Return link back to the main dashboard. -->
     <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+>>>>>>> 7e1372117ab7ba68b651a4ab1759d6dad6d1cbd6
 {% endblock %}
