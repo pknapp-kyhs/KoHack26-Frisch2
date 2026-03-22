@@ -28,6 +28,7 @@ HEBREW_PHONETIC_MAP = {
     '\u05e3': 'f',   # Final Pe
     '\u05e4': 'f',   # Pe (without dagesh)
     '\u05e4\u05bc': 'p', # Pe (with dagesh)
+    '\u05da\u05bc': 'k', # Final Kaf with dagesh
     '\u05e5': 'ts',  # Final Tsadi
     '\u05e6': 'ts',  # Tsadi
     '\u05e7': 'k',   # Qof
