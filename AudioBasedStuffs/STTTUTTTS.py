@@ -42,8 +42,8 @@ def handle_command(text):
         print(f"[Response] {response_text}")
         
         # Speak the response
-        if response_text:
-            STT_TTS.speak(response_text)
+        #if response_text:
+        #    STT_TTS.speak(response_text)
         
         return response_text
     except Exception as e:

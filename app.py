@@ -1,7 +1,7 @@
 """Flask web app with session-based auth, Braille conversion, and real-time audio streaming."""
 
 from __future__ import annotations
-
+import subprocess
 import os
 import re
 import secrets
@@ -101,6 +101,7 @@ BRAILLE_MAP = {
     "ש": "⠩",
     "ת": "⠹",
 }
+
 #
 # Secret key helpers keep Flask sessions stable between restarts.
 def _get_secret_file() -> Path:
@@ -453,7 +454,15 @@ def delete_user(username):
     # Send the admin back to the list page
     return redirect(url_for('admin_panel'))
 
-
+def close_previous_sockets():
+    blocked_sites=["http://127.0.0.1:5050/"]
+    script = 'tell application "Google Chrome" to get URL of tabs of windows'
+    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+    tabs = result.stdout.split(", ")
+    for i, tab in enumerate(tabs):
+        if any(site in tab for site in blocked_sites):
+            close_script = f'tell application "Google Chrome" to close tab {i+1} of window 1'
+            subprocess.run(['osascript', '-e', close_script])
 #
 # Per-client AudioEngine registry keyed by socket session id.
 _audio_engines: dict[str, STTTUTTTS.AudioEngine] = {}
@@ -500,6 +509,12 @@ def handle_audio_stream(data):
         # Forward intermediate partial results so the UI stays responsive.
         socketio.emit("partial_result", text, to=request.sid)
 
-
+def run():
+    try:
+        socketio.run(app, host="0.0.0.0", port=5050, allow_unsafe_werkzeug=True)
+    except Exception as e:
+        print(f"Error: {e}")
+        run()
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5050, allow_unsafe_werkzeug=True)
+    run()
+        

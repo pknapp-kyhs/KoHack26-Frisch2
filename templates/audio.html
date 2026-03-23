@@ -21,6 +21,9 @@
     <!-- Button to start/stop microphone recording -->
     <button id="recordBtn">Click to Ask (Mic)</button>
     
+    <!-- Button to stop the speaking -->
+    <button id="stopSpeakBtn">Stop Speaking</button>
+    
     <!-- Displays the current status (Idle, Listening, Done, etc.) -->
     <p>Status: <span id="status">Idle</span></p>
     
@@ -108,6 +111,12 @@
                 stopStreaming();
                 document.getElementById('status').innerText = "Idle";
             }
+        };
+
+        // When user clicks the stop speaking button
+        document.getElementById('stopSpeakBtn').onclick = () => {
+            window.speechSynthesis.cancel();
+            
         };
 
         socket.on('transcript_result', (text) => {

@@ -13,13 +13,15 @@ def create_recognizer():
     """Create a new per-client recognizer instance to avoid thread conflicts"""
     return vosk.KaldiRecognizer(model, 16000)
 
-def listen(recognizer, data):        #listens to mic and returns text
+def listen(recognizer, data, PartialData=None):        #listens to mic and returns text
     """Process audio chunk with given recognizer instance"""
     try:
         if recognizer.AcceptWaveform(data):#if data is recognized
             result = recognizer.Result()#gets result from recognizer
             # Use .get() so a silent/noise chunk with no lattice path returns "" instead of raising KeyError
             text = json.loads(result).get("text", "")
+            if not PartialData:
+                text=PartialData+text
             if text:
                 print(f"[STT] Recognized: {text}")
                 return text
@@ -40,25 +42,4 @@ def listen(recognizer, data):        #listens to mic and returns text
         return None
 
 ### TTS initialization ###
-engine = pyttsx3.init()
-voices = engine.getProperty('voices')
-for voice in voices:
-    if 'josh' in voice.name.lower():
-        engine.setProperty('voice', voice.id)
-        break
-engine.setProperty('rate', 75)
-engine.setProperty('volume', 1.0)
-def speak(text):
-        """Speak text using TTS (async in separate thread)"""
-        def run(text):
-            try:
-                text=transliteration.transliterate(text)
-                engine.say(text)
-                engine.runAndWait()
-                print(f"[TTS] Speaking: {text}")
-            except Exception as e:
-                print(f"(TTS Error: {e})")
-        
-            finally:
-                time.sleep(0.5)  # Short pause to prevent immediate self-listening
-        threading.Thread(target=run,args=(text,), daemon=True).start()
+#
