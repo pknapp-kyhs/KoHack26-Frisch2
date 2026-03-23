@@ -303,13 +303,13 @@ def signup():
 
 
 @app.route("/audio/", methods=["GET", "POST"])
-def audio():
+def open_sockets():
     return render_template("audio.html")
 
 
 @app.route("/braille/", methods=["GET", "POST"])
 def braille():
-    return render_template("audio.html")
+    return render_template("text.html")
 
 
 @app.route("/texts/", methods=["GET", "POST"])
@@ -354,10 +354,6 @@ def dyslexia():
     return render_template("dyslexia.html")
 
 
-@app.route("/plsnoopenme")
-def open_sockets():
-    return render_template("openVoiceLine.html")
-
 @app.route("/admin/")
 def admin():
     return render_template('admin.html')
@@ -370,14 +366,53 @@ def delete_user(username):
     
     # Send the admin back to the list page
     return redirect(url_for('admin_panel'))
+clients = {}
 
+@socketio.on("connect")
+def connect():
+    try:
+        clients[request.sid] = STTTUTTTS.create_engine()
+        print(f"[Socket] Client connected: {request.sid}")
+    except Exception as e:
+        print(f"[Socket] Failed to create engine for client {request.sid}: {e}")
+
+@socketio.on("disconnect")
+def disconnect():
+    try:
+        clients.pop(request.sid, None)
+        print(f"[Socket] Client disconnected: {request.sid}")
+    except Exception as e:
+        print(f"[Socket] Error on disconnect: {e}")
 
 @socketio.on("audio_stream")
 def handle_audio_stream(data):
-    audio_bytes = bytearray(data)
-    text = STTTUTTTS.STTTUTTTS(audio_bytes)
-    socketio.emit("transcript_result", text)
+    try:
+        engine = clients.get(request.sid)
+        if not engine:
+            print(f"[Socket] No engine for client {request.sid}")
+            return
 
+        # Convert data to bytes safely
+        try:
+            audio_bytes = bytes(data) if not isinstance(data, bytes) else data
+        except Exception as e:
+            print(f"[Socket] Failed to convert audio data: {e}")
+            return
 
+        status, text = engine.process_chunk(audio_bytes)
+
+        if status == "partial" and text:
+            socketio.emit("partial_result", text, room=request.sid)
+
+        elif status == "final" and text:
+            try:
+                response = STTTUTTTS.handle_command(text)
+                socketio.emit("transcript_result", response, room=request.sid)
+            except Exception as e:
+                print(f"[Socket] Failed to handle command: {e}")
+                socketio.emit("error", f"Error processing command: {e}", room=request.sid)
+    except Exception as e:
+        print(f"[Socket] Unexpected error in audio_stream: {e}")
+        socketio.emit("error", "Server error processing audio", room=request.sid)
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=5050, allow_unsafe_werkzeug=True)

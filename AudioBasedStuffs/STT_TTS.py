@@ -2,20 +2,38 @@
 import pyttsx3
 import AudioBasedStuffs.transliteration as transliteration
 import vosk
-import json
+import threading
 import time
+import json
 ###STT initialization ###
 model_path = "vosk-model-small-en-us-0.15" #Vosk model path
 model = vosk.Model(model_path) #inits model
-recognizer = vosk.KaldiRecognizer(model, 16000) # open recognizer with model and sample rate
-def listen(data):        #listens to mic and returns text
-    if recognizer.AcceptWaveform(data):#if data is recognized
-        result = recognizer.Result()#gets result from recognizer
-        text = json.loads(result)["text"]#extracts text from result
-        if text:
-            print(text)
-            return text
-        print(None)
+
+def create_recognizer():
+    """Create a new per-client recognizer instance to avoid thread conflicts"""
+    return vosk.KaldiRecognizer(model, 16000)
+
+def listen(recognizer, data):        #listens to mic and returns text
+    """Process audio chunk with given recognizer instance"""
+    try:
+        if recognizer.AcceptWaveform(data):#if data is recognized
+            result = recognizer.Result()#gets result from recognizer
+            text = json.loads(result)["text"]#extracts text from result
+            if text:
+                print(f"[STT] Recognized: {text}")
+                return text
+            return None
+        else:
+            # Return partial result if available
+            partial_result = recognizer.PartialResult()
+            if partial_result:
+                partial_json = json.loads(partial_result)
+                partial_text = partial_json.get("partial", "")
+                if partial_text:
+                    return partial_text
+        return None
+    except Exception as e:
+        print(f"[STT Error] {e}")
         return None
 
 ### TTS initialization ###
@@ -28,18 +46,16 @@ for voice in voices:
 engine.setProperty('rate', 75)
 engine.setProperty('volume', 1.0)
 def speak(text):
+        """Speak text using TTS (async in separate thread)"""
+        def run(text):
             try:
-
                 text=transliteration.transliterate(text)
                 engine.say(text)
                 engine.runAndWait()
-                
+                print(f"[TTS] Speaking: {text}")
             except Exception as e:
                 print(f"(TTS Error: {e})")
+        
             finally:
                 time.sleep(0.5)  # Short pause to prevent immediate self-listening
-if __name__ == "__main__": #checks if the script is run directly
-    while True:
-        text = listen()
-        if text:
-            print("You said:", text)
+        threading.Thread(target=run,args=(text,), daemon=True).start()
