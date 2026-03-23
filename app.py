@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import os
+import re
 import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote
 
 from flask import Flask, render_template, redirect, url_for, request, session, flash
 from flask_socketio import SocketIO
 import PyPDF2
+import requests
 import AudioBasedStuffs.STTTUTTTS as STTTUTTTS
+from AudioBasedStuffs.transliteration import transliterate
 from validate_passwd import validate_passwd
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -156,6 +160,64 @@ def extract_text_from_upload(uploaded_file) -> str:
     return ""
 
 
+PRAYER_OPTIONS = [
+    {
+        "label": "Modeh Ani",
+        "ref": "Siddur Ashkenaz, Weekday, Shacharit, Preparatory Prayers, Modeh Ani",
+    },
+    {
+        "label": "Shema",
+        "ref": "Siddur Ashkenaz, Weekday, Shacharit, Blessings of the Shema, Shema",
+    },
+    {
+        "label": "Amidah",
+        "ref": "Siddur Ashkenaz, Weekday, Shacharit, Amidah",
+    },
+]
+
+
+def clean_sefaria_text(text: str) -> list[str]:
+    text = text.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+    text = re.sub(r"<[^>]+>", "", text)
+    lines = []
+    for line in text.splitlines():
+        cleaned = re.sub(r"\s+", " ", line).strip()
+        if cleaned:
+            lines.append(cleaned)
+    return lines
+
+
+def extract_lines_from_sefaria_content(content) -> list[str]:
+    if isinstance(content, str):
+        return clean_sefaria_text(content)
+    if isinstance(content, list):
+        lines = []
+        for item in content:
+            lines.extend(extract_lines_from_sefaria_content(item))
+        return lines
+    return []
+
+
+def build_transliterated_lines(hebrew_lines: list[str]) -> list[dict[str, str]]:
+    return [
+        {
+            "hebrew": line,
+            "transliteration": transliterate(line) or "",
+        }
+        for line in hebrew_lines
+    ]
+
+
+def get_prayer_text_from_sefaria(prayer_ref: str) -> list[dict[str, str]]:
+    encoded_ref = quote(prayer_ref.replace(" ", "_"), safe=",")
+    url = f"https://www.sefaria.org/api/texts/{encoded_ref}?context=0"
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+    hebrew_lines = extract_lines_from_sefaria_content(data.get("he", []))
+    return build_transliterated_lines(hebrew_lines)
+
+
 USERS.append(_create_user_entry("Charles", "Charles"))
 
 
@@ -224,6 +286,11 @@ def audio():
     return render_template("audio.html")
 
 
+@app.route("/braille/", methods=["GET", "POST"])
+def braille():
+    return render_template("audio.html")
+
+
 @app.route("/texts/", methods=["GET", "POST"])
 def texts():
     braille = None
@@ -238,7 +305,27 @@ def texts():
 
 @app.route("/tefilla/", methods=["GET", "POST"])
 def tefilla():
-    return render_template("tefilla.html")
+    selected_prayer = request.args.get("prayer", PRAYER_OPTIONS[0]["ref"])
+    if not any(option["ref"] == selected_prayer for option in PRAYER_OPTIONS):
+        selected_prayer = PRAYER_OPTIONS[0]["ref"]
+
+    prayer_lines = []
+    error_message = None
+
+    try:
+        prayer_lines = get_prayer_text_from_sefaria(selected_prayer)
+        if not prayer_lines:
+            error_message = "No prayer lines were returned for that selection."
+    except requests.RequestException:
+        error_message = "Could not load that prayer from Sefaria right now."
+
+    return render_template(
+        "tefilla.html",
+        prayers=PRAYER_OPTIONS,
+        selected_prayer=selected_prayer,
+        prayer_lines=prayer_lines,
+        error_message=error_message,
+    )
 
 
 @app.route("/dyslexia/", methods=["GET", "POST"])

@@ -10,8 +10,8 @@
     <form method="get">
         <label for="prayer">Prayer:</label>
         <select name="prayer" id="prayer">
-            {% for prayer in prayers %}
-                <option value="{{ prayer.ref }}" {% if prayer.ref == selected_prayer %}selected{% endif %}>
+            {% for prayer in prayers|default([]) %}
+                <option value="{{ prayer.ref }}" {% if prayer.ref == selected_prayer|default('') %}selected{% endif %}>
                     {{ prayer.label }}
                 </option>
             {% endfor %}
@@ -44,7 +44,7 @@
     <div id="prayer-reader" style="margin-top: 24px;"></div>
 
     <script>
-        const prayerLines = {{ prayer_lines|tojson }};
+        const prayerLines = {{ prayer_lines|default([])|tojson }};
         const reader = document.getElementById("prayer-reader");
         const wpmSlider = document.getElementById("wpm-slider");
         const wpmValue = document.getElementById("wpm-value");
