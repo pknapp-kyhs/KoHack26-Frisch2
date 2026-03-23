@@ -287,6 +287,11 @@ def audio():
     return render_template("audio.html")
 
 
+@app.route("/braille/", methods=["GET", "POST"])
+def braille():
+    return render_template("audio.html")
+
+
 @app.route("/texts/", methods=["GET", "POST"])
 def texts():
     braille = None
