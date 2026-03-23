@@ -3,7 +3,7 @@ Flask web application for user authentication and dashboard access.
 Provides routes for sign-in, registration, and a protected dashboard.
 """
 
-from flask import Flask, render_template, url_for, redirect, request, session
+from flask import Flask, render_template, url_for, redirect, request, session, flash
 from flask_socketio import SocketIO
 import PyPDF2
 import STTTUTTTS
@@ -166,24 +166,31 @@ def dashboard():
     else:
         return redirect(url_for('signin'))
 
-@app.route("/signup/<args>", methods=["GET","POST"])
-def signup(args):
-    """
-    Handles user signup. Creates a new user if username is available.
-    
-    Returns:
-        str: Rendered signup template or redirect response.
-    """
+from flask import Flask, render_template, request, redirect, url_for, flash
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # 1. Check if user exists
         if find_user(username) is not None:
-            return redirect(url_for('index'))
+            flash("Username already taken.", "error")
+            return redirect(url_for('signup'))
         
+        # 2. Validate password
         if not validate_passwd(password):
-            return redirect(url_for('signup'), args = "Bad Password!")
+            flash("Bad Password! Must meet security requirements.", "error")
+            return redirect(url_for('signup'))
+
+        # 3. Add user (Note: adduser should hash the password!)
         adduser(username, password)
+        
+        flash("Account created successfully!", "success")
         return redirect(url_for('dashboard', username=username))
+
+    # GET request: render the form
     return render_template("signup.html")
 
 @app.route("/braille/", methods=["GET","POST"])

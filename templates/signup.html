@@ -12,5 +12,5 @@
         <button type="submit">Sign Up</button>
     </form>
     
-    {{args}}
+    {% with messages = get_flashed_messages() %}
 {% endblock %}
