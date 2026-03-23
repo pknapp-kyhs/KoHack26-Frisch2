@@ -15,6 +15,7 @@ from pathlib import Path
 import secrets
 import os
 
+import validate_passwd
 import requests
 
 from transliteration import transliterate
@@ -165,8 +166,8 @@ def dashboard():
     else:
         return redirect(url_for('signin'))
 
-@app.route("/signup/", methods=["GET","POST"])
-def signup():
+@app.route("/signup/<args>", methods=["GET","POST"])
+def signup(args):
     """
     Handles user signup. Creates a new user if username is available.
     
@@ -178,9 +179,13 @@ def signup():
         password = request.form["password"]
         if find_user(username) is not None:
             return redirect(url_for('index'))
+        
+        if not validate_passwd(password):
+            return redirect(url_for('signup'), args = "Bad Password!")
         adduser(username, password)
         return redirect(url_for('dashboard', username=username))
     return render_template("signup.html")
+
 @app.route("/braille/", methods=["GET","POST"])
 def braille():
     """Handle braille route."""
