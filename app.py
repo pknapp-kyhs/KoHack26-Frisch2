@@ -265,7 +265,7 @@ def signin():
         if authenticate(username, password):
             session["username"] = username
             flash("Welcome back!", "success")
-            if username == "Charles":
+            if username == "charles":
                 return redirect(url_for("admin"))
             return redirect(url_for("dashboard"))
 
@@ -374,7 +374,7 @@ def delete_user(username):
     USERS = [user for user in USERS if user.username != username]
     
     # Send the admin back to the list page
-    return redirect(url_for('admin_panel'))
+    return redirect(url_for('admin'))
 
 
 @socketio.on("audio_stream")
