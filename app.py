@@ -1,51 +1,40 @@
-"""
-Flask web application for user authentication and dashboard access.
-Provides routes for sign-in, registration, and a protected dashboard.
-"""
+"""Flask web app with session-based auth, Braille conversion, and real-time audio streaming."""
 
-from flask import Flask, render_template, url_for, redirect, request, session, flash
+from __future__ import annotations
+
+import os
+import secrets
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
+
+from flask import Flask, render_template, redirect, url_for, request, session, flash
 from flask_socketio import SocketIO
 import PyPDF2
-import STTTUTTTS
+import AudioBasedStuffs.STTTUTTTS as STTTUTTTS
+from validate_passwd import validate_passwd
+from werkzeug.security import check_password_hash, generate_password_hash
 
-# Braille map for English and Hebrew
-import re
-from urllib.parse import quote
-from pathlib import Path
-import secrets
-import os
-
-import validate_passwd
-import requests
-
-from transliteration import transliterate
-
-# Map supported English/Hebrew characters into Braille symbols for the converter page.
-braille_map = {
-    # English
-    'a': '⠁', 'b': '⠃', 'c': '⠉', 'd': '⠙', 'e': '⠑', 'f': '⠋', 'g': '⠛', 'h': '⠓', 
-    'i': '⠊', 'j': '⠚', 'k': '⠅', 'l': '⠇', 'm': '⠍', 'n': '⠝', 'o': '⠕', 'p': '⠏', 
-    'q': '⠟', 'r': '⠗', 's': '⠎', 't': '⠞', 'u': '⠥', 'v': '⠧', 'w': '⠺', 'x': '⠭', 
-    'y': '⠽', 'z': '⠵',
-    # Hebrew
-    'א': '⠁', 'ב': '⠃', 'ג': '⠛', 'ד': '⠙', 'ה': '⠓', 'ו': '⠺', 'ז': '⠵', 'ח': '⠡', 
-    'ט': '⠞', 'י': '⠊', 'כ': '⠅', 'ך': '⠅', 'ל': '⠇', 'מ': '⠍', 'ם': '⠍', 'נ': '⠝', 
-    'ן': '⠝', 'ס': '⠎', 'ע': '⠯', 'פ': '⠏', 'ף': '⠏', 'צ': '⠯', 'ץ': '⠯', 'ק': '⠟', 
-    'ר': '⠗', 'ש': '⠮', 'ת': '⠕',
-    # Common
-    ' ': ' ', '.': '⠲', ',': '⠂', '?': '⠦', '!': '⠖'
+BRAILLE_MAP = {
+    'a': 'â ', 'b': 'â ƒ', 'c': 'â ‰', 'd': 'â ™', 'e': 'â ‘', 'f': 'â ‹', 'g': 'â ›', 'h': 'â “',
+    'i': 'â Š', 'j': 'â š', 'k': 'â …', 'l': 'â ‡', 'm': 'â ', 'n': 'â ', 'o': 'â •', 'p': 'â ',
+    'q': 'â Ÿ', 'r': 'â —', 's': 'â Ž', 't': 'â ž', 'u': 'â ¥', 'v': 'â §', 'w': 'â º', 'x': 'â ­',
+    'y': 'â ½', 'z': 'â µ', '×': 'â ', '×‘': 'â ƒ', '×’': 'â ›', '×“': 'â ™', '×”': 'â “',
+    '×•': 'â º', '×–': 'â µ', '×—': 'â ¡', '×˜': 'â ž', '×™': 'â Š', '×›': 'â …', '×š': 'â …',
+    '×œ': 'â ‡', '×ž': 'â ', '×': 'â ', '× ': 'â ', '×Ÿ': 'â ', '×¡': 'â Ž', '×¢': 'â ¯',
+    '×¤': 'â ', '×£': 'â ', '×¦': 'â ¯', '×¥': 'â ¯', '×§': 'â Ÿ', '×¨': 'â —', '×©': 'â ®',
+    '×ª': 'â •', ' ': ' ', '.': 'â ²', ',': 'â ‚', '?': 'â ¦', '!': 'â –'
 }
 
-def _get_secret_file():
+
+def _get_secret_file() -> Path:
     env_path = os.environ.get("VIRTUAL_ENV")
     if env_path:
-        venv_path = Path(env_path)
-    else:
-        venv_path = Path(__file__).resolve().parent / ".venv"
-    return venv_path / "flask_secret_key.txt"
+        return Path(env_path) / "flask_secret_key.txt"
+    return Path(__file__).resolve().parent / ".venv" / "flask_secret_key.txt"
 
 
-def _load_secret_key():
+def _load_secret_key() -> str:
     secret_path = _get_secret_file()
     if secret_path.exists():
         return secret_path.read_text().strip()
@@ -61,186 +50,177 @@ def _load_secret_key():
 
 
 app = Flask(__name__)
-# Secret key for session management (should be changed in production)
-app.secret_key = "RatherSecretStringHackersPleaseDon'tStealMeI'mTooCoolToStealTrustMe"
 app.secret_key = _load_secret_key()
-
-# List to store user objects
-users = []
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+
+@dataclass
 class User:
-    """
-    Represents a user with username and password.
-    """
-    def __init__(self, username, password):
-        self.username = username
-        self.password = password
+    username: str
+    password_hash: str
+
+    def verify_password(self, raw_password: str) -> bool:
+        return check_password_hash(self.password_hash, raw_password)
 
 
-def adduser(name, passwd):
-    user  = User(name, passwd)
-    users.append(user)
+USERS: list[User] = []
 
-# Create a default user for testing
-adduser("Charles", "Charles")
 
-def validate(user, usn, pw):
-    """
-    Validates if the provided username and password match the user's credentials.
-    
-    Args:
-        user (User): The user object to validate against.
-        usn (str): The username to check.
-        pw (str): The password to check.
-    
-    Returns:
-        bool: True if credentials match, False otherwise.
-    """
-    if user.username == usn and user.password == pw:
-        return True
-    else:
+def _create_user_entry(username: str, raw_password: str) -> User:
+    return User(username=username, password_hash=generate_password_hash(raw_password))
+
+
+def get_user(username: str) -> Optional[User]:
+    username = username.strip().lower()
+    return next((user for user in USERS if user.username.lower() == username), None)
+
+
+def register_user(username: str, raw_password: str) -> bool:
+    if get_user(username):
         return False
-        
-def find_user(name):
-    """
-    Finds the index of a user in the users list by username.
-    
-    Args:
-        name (str): The username to search for.
-    
-    Returns:
-        int or None: The index of the user if found, None otherwise.
-    """
-    for i in range(len(users)):
-        if users[i].username==name:
-            return i
-    return None
+    USERS.append(_create_user_entry(username, raw_password))
+    return True
 
-@app.route("/", methods=["GET", "POST"])
+
+def authenticate(username: str, raw_password: str) -> bool:
+    user = get_user(username)
+    return bool(user and user.verify_password(raw_password))
+
+
+def convert_to_braille(text: str) -> str:
+    return "".join(BRAILLE_MAP.get(char.lower(), char) for char in text)
+
+
+def extract_text_from_upload(uploaded_file) -> str:
+    if not uploaded_file or not uploaded_file.filename:
+        return ""
+
+    filename = uploaded_file.filename.lower()
+    if filename.endswith(".txt"):
+        return uploaded_file.read().decode("utf-8", errors="ignore")
+
+    if filename.endswith(".pdf"):
+        reader = PyPDF2.PdfReader(uploaded_file)
+        return "".join(page.extract_text() or "" for page in reader.pages)
+
+    return ""
+
+
+USERS.append(_create_user_entry("Charles", "Charles"))
+
+
+def _flash_and_redirect(message: str, category: str, endpoint: str) -> str:
+    flash(message, category)
+    return redirect(url_for(endpoint))
+
+
+@app.route("/", methods=["GET"])
 def index():
-    """
-    Renders the home page.
-    
-    Returns:
-        str: Rendered HTML template for the index page.
-    """
     return render_template("index.html")
 
-@app.route("/signin/", methods=["GET","POST"])
+
+@app.route("/signin/", methods=["GET", "POST"])
 def signin():
-    """
-    Handles user sign-in. Validates credentials and redirects accordingly.
-    
-    Returns:
-        str: Rendered signin template or redirect response.
-    """
     if request.method == "POST":
-        usn = request.form["username"]
-        passw = request.form["password"]
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        if not username or not password:
+            return _flash_and_redirect("Username and password are required.", "warning", "signin")
 
-        user_index = find_user(usn)
-
-        if user_index is not None and validate(users[user_index], usn, passw):
-            session["username"] = usn
+        if authenticate(username, password):
+            session["username"] = username
+            flash("Welcome back!", "success")
             return redirect(url_for("dashboard"))
 
-        elif user_index is not None:
-            return "Invalid credentials!"
-
-        else:
-            return redirect(url_for("signup"))
+        return _flash_and_redirect("Invalid username or password.", "error", "signin")
 
     return render_template("signin.html")
 
+
 @app.route("/dashboard/")
 def dashboard():
-    """
-    Renders the dashboard page if user is logged in, otherwise redirects to signin.
-    
-    Returns:
-        str: Rendered dashboard template or redirect response.
-    """
-    if "username" in session:
-        username = session.get("username")
-        return render_template("dashboard.html", username = username)
-    else:
-        return redirect(url_for('signin'))
-
+    username = session.get("username")
+    if not username:
+        flash("Please sign in to view your dashboard.", "info")
+        return redirect(url_for("signin"))
+    return render_template("dashboard.html", username=username)
 
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        if not username or not password:
+            return _flash_and_redirect("Username and password are required.", "warning", "signup")
 
-        # 1. Check if user exists
-        if find_user(username) is not None:
-            flash("Username already taken.", "error")
-            return redirect(url_for('signup'))
-        
-        # 2. Validate password
+        if get_user(username):
+            return _flash_and_redirect("Username already taken.", "error", "signup")
+
         if not validate_passwd(password):
-            flash("Bad Password! Must meet security requirements.", "error")
-            return redirect(url_for('signup'))
+            return _flash_and_redirect(
+                "Password does not meet the complexity requirements.", "error", "signup"
+            )
 
-        # 3. Add user (Note: adduser should hash the password!)
-        adduser(username, password)
-        
+        register_user(username, password)
+        session["username"] = username
         flash("Account created successfully!", "success")
-        return redirect(url_for('dashboard', username=username))
+        return redirect(url_for("dashboard"))
 
-    # GET request: render the form
     return render_template("signup.html")
 
-@app.route("/braille/", methods=["GET","POST"])
-def braille():
-    """Handle braille route."""
-    return render_template("braille.html")
 
-@app.route("/texts/", methods=["GET","POST"])
+@app.route("/audio/", methods=["GET", "POST"])
+def audio():
+    return render_template("audio.html")
+
+
+@app.route("/texts/", methods=["GET", "POST"])
 def texts():
-    """Handle texts route."""
     braille = None
     if request.method == "POST":
-        text = ""
-        if 'text' in request.form:
-            text = request.form['text']
-        elif 'file' in request.files:
-            file = request.files['file']
-            if file.filename != '':
-                filename = file.filename.lower()
-                if filename.endswith('.txt'):
-                    text = file.read().decode('utf-8')
-                elif filename.endswith('.pdf'):
-                    pdf_reader = PyPDF2.PdfReader(file)
-                    for page in pdf_reader.pages:
-                        text += page.extract_text()
-        if text:
-            braille = "".join(braille_map.get(char.lower(), char) for char in text)
+        source_text = request.form.get("text", "").strip()
+        if not source_text:
+            source_text = extract_text_from_upload(request.files.get("file"))
+        if source_text:
+            braille = convert_to_braille(source_text)
     return render_template("texts.html", braille=braille)
 
 
-
-@app.route("/tefilla/", methods=["GET","POST"])
+@app.route("/tefilla/", methods=["GET", "POST"])
 def tefilla():
-    """Handle tefilla route."""
     return render_template("tefilla.html")
 
-@app.route("/dyslexia/", methods=["GET","POST"])
+
+@app.route("/dyslexia/", methods=["GET", "POST"])
 def dyslexia():
-    """Handle dyslexia route."""
     return render_template("dyslexia.html")
 
+
 @app.route("/plsnoopenme")
-def openSockets():
-    return render_template('openVoiceLine.html')
+def open_sockets():
+    return render_template("openVoiceLine.html")
 
-@socketio.on('audio_stream')
-def handle_audio(data):
+@app.route("/admin/")
+def admin():
+    return render_template('admin.html')
+
+@app.route('/delete-user/<username>', methods=['POST'])
+def delete_user(username):
+    # Find the user object and remove it from the global list
+    global USERS
+    USERS = [user for user in USERS if user.username != username]
+    
+    # Send the admin back to the list page
+    return redirect(url_for('admin_panel'))
+
+
+@socketio.on("audio_stream")
+def handle_audio_stream(data):
     audio_bytes = bytearray(data)
-    text= STTTUTTTS.STTTUTTTS(audio_bytes)
-    socketio.emit('transcript_result', text)
+    text = STTTUTTTS.STTTUTTTS(audio_bytes)
+    socketio.emit("transcript_result", text)
 
-# Run the Flask application on all interfaces at port 5050
-app.run(host="0.0.0.0",port=5050)
+
+if __name__ == "__main__":
+    socketio.run(app, host="0.0.0.0", port=5050, allow_unsafe_werkzeug=True)

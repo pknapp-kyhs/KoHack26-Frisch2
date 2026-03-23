@@ -1,4 +1,4 @@
-import STT_TTS
+import AudioBasedStuffs.STT_TTS as STT_TTS
 import SefariaAPIDispatchCommand
 def STTTUTTTS(data):
     text=STT_TTS.listen(data)
