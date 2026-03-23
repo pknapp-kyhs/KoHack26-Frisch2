@@ -15,7 +15,7 @@ import AudioBasedStuffs.STTTUTTTS as STTTUTTTS
 from validate_passwd import validate_passwd
 from werkzeug.security import check_password_hash, generate_password_hash
 
-BRAILLE_MAP = {
+BRAILLE_MAP = { #dict mapping characters to their Braille Unicode representations
     'a': '⠁',
     'b': '⠒',
     'c': '�0',
@@ -176,7 +176,6 @@ def signin():
         password = request.form.get("password", "")
         if not username or not password:
             return _flash_and_redirect("Username and password are required.", "warning", "signin")
-
         if authenticate(username, password):
             session["username"] = username
             flash("Welcome back!", "success")
