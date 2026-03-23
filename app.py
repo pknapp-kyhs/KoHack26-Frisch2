@@ -201,6 +201,19 @@ def dyslexia():
 def open_sockets():
     return render_template("openVoiceLine.html")
 
+@app.route("/admin/")
+def admin():
+    return render_template('admin.html')
+
+@app.route('/delete-user/<username>', methods=['POST'])
+def delete_user(username):
+    # Find the user object and remove it from the global list
+    global USERS
+    USERS = [user for user in USERS if user.username != username]
+    
+    # Send the admin back to the list page
+    return redirect(url_for('admin_panel'))
+
 
 @socketio.on("audio_stream")
 def handle_audio_stream(data):
