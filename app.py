@@ -455,12 +455,50 @@ def delete_user(username):
 
 
 #
+# Per-client AudioEngine registry keyed by socket session id.
+_audio_engines: dict[str, STTTUTTTS.AudioEngine] = {}
+
+
+@socketio.on("connect")
+def handle_connect():
+    """Create a dedicated AudioEngine for each connecting client."""
+    _audio_engines[request.sid] = STTTUTTTS.create_engine()
+
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    """Release the AudioEngine when a client disconnects."""
+    _audio_engines.pop(request.sid, None)
+
+
+#
 # SocketIO handler accepts raw audio, transcribes with STTTUTTTS, and broadcasts the transcript.
 @socketio.on("audio_stream")
 def handle_audio_stream(data):
+    # Look up (or lazily create) the per-client engine so recognition state is isolated.
+    engine = _audio_engines.get(request.sid)
+    if engine is None:
+        engine = STTTUTTTS.create_engine()
+        _audio_engines[request.sid] = engine
+
     audio_bytes = bytes(data)
-    text = STTTUTTTS.STTTUTTTS(audio_bytes)
-    socketio.emit("transcript_result", text)
+    status, text = engine.process_chunk(audio_bytes)
+
+    if status == "final" and text:
+        # Send the recognized transcript back to this client.
+        socketio.emit("transcript_result", text, to=request.sid)
+        # Dispatch the command to Sefaria and speak the response.
+        response = STTTUTTTS.handle_command(text)
+        if response:
+            speak_text = transliterate(response)
+            if speak_text.startswith("Hebrew"):
+                speak_text = speak_text[len("Hebrew"):].lstrip(":\n ")
+            elif speak_text.startswith("English"):
+                speak_text = speak_text[len("English"):].lstrip(":\n ")
+            socketio.emit("speak_text", speak_text, to=request.sid)
+    elif text:
+        # Forward intermediate partial results so the UI stays responsive.
+        socketio.emit("partial_result", text, to=request.sid)
 
 
 if __name__ == "__main__":

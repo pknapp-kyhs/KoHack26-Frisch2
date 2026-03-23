@@ -36,6 +36,25 @@
         let audioContext;
         let processor;
         let microphone;
+        let mediaStream;
+
+        function stopStreaming() {
+            if (processor) { processor.disconnect(); processor = null; }
+            if (microphone) { microphone.disconnect(); microphone = null; }
+            if (audioContext) { audioContext.close(); audioContext = null; }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = null;
+            }
+            document.getElementById('recordBtn').innerText = "Click to Ask (Mic)";
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window && text) {
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+            }
+        }
 
         async function startStreaming() {
             const status = document.getElementById('status');
@@ -47,16 +66,17 @@
             }
 
             // 1. Ask user for microphone permission
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
             // 2. Set up audio processing at 16kHz sample rate (required for speech recognition)
             audioContext = new AudioContext({ sampleRate: 16000 });
-            microphone = audioContext.createMediaStreamSource(stream);
+            microphone = audioContext.createMediaStreamSource(mediaStream);
             processor = audioContext.createScriptProcessor(4096, 1, 1);
 
             microphone.connect(processor);
             processor.connect(audioContext.destination);
             status.innerText = "Listening...";
+            document.getElementById('recordBtn').innerText = "Stop";
 
             // 3. Listen for audio chunks and send them to the server
             processor.onaudioprocess = (e) => {
@@ -85,19 +105,21 @@
                     console.error(error);
                 }
             } else {
-                location.reload(); // Simple toggle to stop
+                stopStreaming();
+                document.getElementById('status').innerText = "Idle";
             }
         };
 
         socket.on('transcript_result', (text) => {
-            // Display the recognized text to the user
+            // Display the recognized text and stop the mic
             document.getElementById('output').innerText = text;
-            // Update status to show we're done processing
-            document.getElementById('status').innerText = "Done!";
+            document.getElementById('status').innerText = "Processing...";
+            stopStreaming();
         });
 
-        // 🔊 SPEAK RESPONSE FROM SERVER
+        // Speak the Sefaria response and mark done
         socket.on('speak_text', (text) => {
+            document.getElementById('status').innerText = "Done!";
             speak(text);
         });
 
