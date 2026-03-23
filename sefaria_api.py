@@ -3,6 +3,7 @@ import requests  # This is our web browser tool. It fetches data from the intern
 import re        # 're' stands for Regular Expressions. It is a powerful search-and-destroy tool for text.
 
 def sefaria_api(command):
+    """Fetch the Sefaria text for a query and return cleaned Hebrew and English snippets."""
     # 3. GO GET THE DATA
     # We go to Sefaria, ask for the text, and convert their response into a Python dictionary (JSON)
     url = f"https://www.sefaria.org/api/texts/{command}?context=0"

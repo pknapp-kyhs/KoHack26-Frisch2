@@ -16,6 +16,7 @@
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
+        // Set up the Socket.IO connection that streams microphone audio to Flask.
         const socket = io();
         let audioContext;
         let processor;
@@ -51,7 +52,7 @@
                     pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
                 }
                 
-                // Stream the raw bytes to Python
+                // Stream the raw bytes to Python for recognition.
                 socket.emit('audio_stream', pcmData.buffer);
             };
         }
@@ -69,6 +70,7 @@
             }
         };
 
+        // Display the transcript once the server responds back.
         socket.on('transcript_result', (text) => {
             document.getElementById('output').innerText = text;
             document.getElementById('status').innerText = "Done!";

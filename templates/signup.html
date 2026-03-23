@@ -3,7 +3,7 @@
 {% block title %}Sign Up{% endblock %}
 
 {% block content %}
-    <!-- This is a completely useless comment -->
+    <!-- Encourage visitors to create an account for the accessibility suite. -->
     <h1>Sign Up Now!</h1>
     <form method="post">
         <button onclick="history.back()">Back</button><br><br>
@@ -20,6 +20,7 @@
     </form>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
+        <!-- Show success or validation errors raised during registration. -->
         {% if messages %}
             <ul>
             {% for category, message in messages %}

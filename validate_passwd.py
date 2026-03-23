@@ -1,4 +1,5 @@
 def validate_passwd(password):
+    """Ensure the password is long enough and includes upper/lower/special characters."""
     has_chars = False
     has_special = False
     has_upper = False
@@ -10,6 +11,7 @@ def validate_passwd(password):
         has_chars = True
 
     for letter in password:
+        # Track the presence of a special character, uppercase, and lowercase letters.
         if letter in special_chars:
             has_special = True
         if letter.isupper():
@@ -17,8 +19,8 @@ def validate_passwd(password):
         if letter.islower():
             has_lower = True
 
+    # Return True only when all requirements are met.
     if has_chars and has_lower and has_upper and has_special:
         return True
-    else:
-        return False
+    return False
         

@@ -6,6 +6,7 @@
 
 {% block content %}
     <h1>Tefilla</h1>
+    <!-- Choose a prayer to load its Hebrew text and transliteration for guided reading. -->
 
     <form method="get">
         <label for="prayer">Prayer:</label>
@@ -20,12 +21,14 @@
     </form>
 
     <div style="margin-top: 16px;">
+        <!-- Words-per-minute slider controls the pacing of the speech synthesis. -->
         <label for="wpm-slider">Words per minute:</label>
         <input type="range" id="wpm-slider" min="60" max="300" value="120">
         <span id="wpm-value">120</span>
     </div>
 
     <div style="margin-top: 12px;">
+        <!-- Optional checkbox to reveal the transliteration under each Hebrew line. -->
         <label for="show-transliteration">
             <input type="checkbox" id="show-transliteration">
             Show transliteration
@@ -33,6 +36,7 @@
     </div>
 
     <div style="margin-top: 12px;">
+        <!-- Playback controls that manage the speech and visual highlighting. -->
         <button type="button" id="play-pause-button">Pause</button>
         <button type="button" id="restart-button">Restart</button>
     </div>
@@ -41,6 +45,7 @@
         <p>{{ error_message }}</p>
     {% endif %}
 
+    <!-- Container where the highlighted lines of the prayer will be rendered. -->
     <div id="prayer-reader" style="margin-top: 24px;"></div>
 
     <script>
@@ -57,9 +62,13 @@
         let isPlaying = prayerLines.length > 0;
         let isSpeakingWord = false;
 
+        // Track which line and word the speech synthesizer is currently on.
+
         const getWords = (text) => text.split(/\s+/).filter(Boolean);
+        // Break a string into words while ignoring extra whitespace to highlight.
 
         function renderPrayer() {
+            // Redraw the prayer reader and emphasize the current word.
             reader.innerHTML = "";
             prayerLines.forEach(function (line, lineIndex) {
                 const lineWrapper = document.createElement("div");
@@ -112,6 +121,7 @@
         }
 
         function stepForward() {
+            // Move the focus to the next word or line inside the rendered prayer.
             if (!prayerLines.length) return false;
             const currentLineWords = getWords(prayerLines[currentLineIndex].hebrew);
 
@@ -130,6 +140,7 @@
         }
 
         function stopPlayback() {
+            // Cancel the timers and speech output so play/pause can cleanly restart.
             if (timerId !== null) {
                 clearTimeout(timerId);
                 timerId = null;
@@ -141,6 +152,7 @@
         }
 
         function speakCurrentWord() {
+            // Speak the transliterated version of the current word, then schedule the next.
             if (!isPlaying || !prayerLines.length || isSpeakingWord) return;
             const transliterationWords = getWords(prayerLines[currentLineIndex].transliteration);
             const wordToSpeak = transliterationWords[currentWordIndex];
@@ -176,6 +188,7 @@
         }
 
         function startPlayback() {
+            // Reset relevant flags and start speaking from the current cursor position.
             if (!prayerLines.length) return;
             if (timerId !== null) {
                 clearTimeout(timerId);
@@ -190,6 +203,7 @@
         }
 
         function restartPlayback() {
+            // Jump back to the first line and restart playback.
             currentLineIndex = 0;
             currentWordIndex = 0;
             renderPrayer();
@@ -197,8 +211,10 @@
         }
 
         const updateWpmLabel = () => wpmValue.textContent = wpmSlider.value;
+        // Keep the words-per-minute label in sync with the slider.
 
         wpmSlider.addEventListener("input", function () {
+            // Update the displayed speed and restart playback for the new pace.
             updateWpmLabel();
             if (isPlaying) startPlayback();
         });
@@ -225,5 +241,6 @@
         }
     </script>
 
+    <!-- Return to the dashboard once the reading session ends. -->
     <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
 {% endblock %}

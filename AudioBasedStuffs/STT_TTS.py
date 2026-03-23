@@ -1,14 +1,15 @@
-### All comments done by built in github copilot for the benefit of the teammates ###
+# Audio capture and speech synthesis helpers that glue Vosk and pyttsx3 together.
 import pyttsx3
 import AudioBasedStuffs.transliteration as transliteration
 import vosk
 import json
 import time
-###STT initialization ###
+# STT initialization: load the Vosk model and prepare the recognizer.
 model_path = "vosk-model-small-en-us-0.15" #Vosk model path
 model = vosk.Model(model_path) #inits model
 recognizer = vosk.KaldiRecognizer(model, 16000) # open recognizer with model and sample rate
-def listen(data):        #listens to mic and returns text
+def listen(data):
+    """Listen for a single chunk of audio and return the transcribed text if any."""
     if recognizer.AcceptWaveform(data):#if data is recognized
         result = recognizer.Result()#gets result from recognizer
         text = json.loads(result)["text"]#extracts text from result
@@ -18,7 +19,7 @@ def listen(data):        #listens to mic and returns text
         print(None)
         return None
 
-### TTS initialization ###
+# TTS initialization: configure pyttsx3 voice engine.
 engine = pyttsx3.init()
 voices = engine.getProperty('voices')
 for voice in voices:
@@ -28,17 +29,16 @@ for voice in voices:
 engine.setProperty('rate', 75)
 engine.setProperty('volume', 1.0)
 def speak(text):
-            try:
-
-                text=transliteration.transliterate(text)
-                engine.say(text)
-                engine.runAndWait()
-                
-            except Exception as e:
-                print(f"(TTS Error: {e})")
-            finally:
-                time.sleep(0.5)  # Short pause to prevent immediate self-listening
-if __name__ == "__main__": #checks if the script is run directly
+    """Transliterate the output and speak it through the OSX style voice engine."""
+    try:
+        text=transliteration.transliterate(text)
+        engine.say(text)
+        engine.runAndWait()
+    except Exception as e:
+        print(f"(TTS Error: {e})")
+    finally:
+        time.sleep(0.5)  # Short pause to prevent immediate self-listening
+if __name__ == "__main__":  # Run a simple loop when executing the module directly.
     while True:
         text = listen()
         if text:

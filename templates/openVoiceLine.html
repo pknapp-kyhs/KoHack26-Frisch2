@@ -12,6 +12,7 @@
     <p>Text: <span id="output">...</span></p>
 
     <script>
+        // Set up a raw Socket.IO connection for the voice demo playback.
         const socket = io();
         let audioContext;
         let processor;
@@ -51,13 +52,15 @@
                 startStreaming();
             } else {
                 processor.disconnect();
-microphone.disconnect();
-audioContext.close();
-audioContext = null;
-document.getElementById('status').innerText = "Stopped";// Simple toggle to stop
+                microphone.disconnect();
+                audioContext.close();
+                audioContext = null;
+                document.getElementById('status').innerText = "Stopped";
+                // Simple toggle to stop the stream and leave the UI idle again.
             }
         };
 
+        // Update the UI when the backend returns the transcribed sentence.
         socket.on('transcript_result', (text) => {
             document.getElementById('output').innerText = text;
             document.getElementById('status').innerText = "Done!";

@@ -68,6 +68,7 @@ def transliterate(text):
     text=text.replace('\u05d9\u05d4\u05d5\u05d4', "Hashem")
     # Sort keys by length descending to match combined characters (like Shin + dot) first
     def merge_sort(keys):
+        """Sort keys so combinations come before single characters."""
         if len(keys) <= 1:
             return keys
         

@@ -4,7 +4,9 @@
 
 {% block content %}
     <h1>Sign In</h1>
+    <!-- Small helper for visitors who landed here by mistake -->
     <button onclick="history.back()">Back</button><br><br>
+    <!-- Simple credential form that posts back to the same route -->
     <form method="post">
         <label>Username: </label>
         <input type="text" name="username" id="username"><br><br>
