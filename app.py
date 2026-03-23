@@ -257,11 +257,16 @@ def signin():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
+
+        
+
         if not username or not password:
             return _flash_and_redirect("Username and password are required.", "warning", "signin")
         if authenticate(username, password):
             session["username"] = username
             flash("Welcome back!", "success")
+            if username == "Charles":
+                return redirect(url_for("admin"))
             return redirect(url_for("dashboard"))
 
         return _flash_and_redirect("Invalid username or password.", "error", "signin")
