@@ -6,7 +6,7 @@ Provides routes for sign-in, registration, and a protected dashboard.
 from flask import Flask, render_template, url_for, redirect, request, session, flash
 from flask_socketio import SocketIO
 import PyPDF2
-import STTTUTTTS
+import AudioBasedStuffs.STTTUTTTS as STTTUTTTS
 
 # Braille map for English and Hebrew
 import re
@@ -18,7 +18,7 @@ import os
 import validate_passwd
 import requests
 
-from transliteration import transliterate
+from AudioBasedStuffs.transliteration import transliterate
 
 # Map supported English/Hebrew characters into Braille symbols for the converter page.
 braille_map = {
