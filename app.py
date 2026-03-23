@@ -16,14 +16,64 @@ from validate_passwd import validate_passwd
 from werkzeug.security import check_password_hash, generate_password_hash
 
 BRAILLE_MAP = {
-    'a': 'â ', 'b': 'â ƒ', 'c': 'â ‰', 'd': 'â ™', 'e': 'â ‘', 'f': 'â ‹', 'g': 'â ›', 'h': 'â “',
-    'i': 'â Š', 'j': 'â š', 'k': 'â …', 'l': 'â ‡', 'm': 'â ', 'n': 'â ', 'o': 'â •', 'p': 'â ',
-    'q': 'â Ÿ', 'r': 'â —', 's': 'â Ž', 't': 'â ž', 'u': 'â ¥', 'v': 'â §', 'w': 'â º', 'x': 'â ­',
-    'y': 'â ½', 'z': 'â µ', '×': 'â ', '×‘': 'â ƒ', '×’': 'â ›', '×“': 'â ™', '×”': 'â “',
-    '×•': 'â º', '×–': 'â µ', '×—': 'â ¡', '×˜': 'â ž', '×™': 'â Š', '×›': 'â …', '×š': 'â …',
-    '×œ': 'â ‡', '×ž': 'â ', '×': 'â ', '× ': 'â ', '×Ÿ': 'â ', '×¡': 'â Ž', '×¢': 'â ¯',
-    '×¤': 'â ', '×£': 'â ', '×¦': 'â ¯', '×¥': 'â ¯', '×§': 'â Ÿ', '×¨': 'â —', '×©': 'â ®',
-    '×ª': 'â •', ' ': ' ', '.': 'â ²', ',': 'â ‚', '?': 'â ¦', '!': 'â –'
+    'a': '⠁',
+    'b': '⠒',
+    'c': '�0',
+    'd': '�"',
+    'e': '�',
+    'f': '�9',
+    'g': '�:',
+    'h': '�',
+    'i': '�`',
+    'j': '�a',
+    'k': '�&',
+    'l': '�!',
+    'm': '⠍',
+    'n': '⠝',
+    'o': '�"',
+    'p': '⠏',
+    'q': '�x',
+    'r': '�',
+    's': '�}',
+    't': '�~',
+    'u': '⠥',
+    'v': '⠧',
+    'w': '⠺',
+    'x': '⠭',
+    'y': '⠽',
+    'z': '⠵',
+    'א': '⠁',
+    '�': '⠒',
+    '�': '�:',
+    '�': '�"',
+    '�': '�',
+    '�"': '⠺',
+    '�': '⠵',
+    '�': '⠡',
+    '��': '�~',
+    '�"': '�`',
+    '�:': '�&',
+    '�a': '�&',
+    '�S': '�!',
+    '�~': '⠍',
+    'ם': '⠍',
+    'נ': '⠝',
+    '�x': '⠝',
+    'ס': '�}',
+    'ע': '⠯',
+    'פ': '⠏',
+    'ף': '⠏',
+    'צ': '⠯',
+    'ץ': '⠯',
+    'ק': '�x',
+    'ר': '�',
+    'ש': '⠮',
+    'ת': '�"',
+    ' ': ' ',
+    '.': '⠲',
+    ',': '�',
+    '?': '⠦',
+    '!': '�',
 }
 
 
@@ -170,9 +220,9 @@ def signup():
     return render_template("signup.html")
 
 
-@app.route("/braille/", methods=["GET", "POST"])
-def braille():
-    return render_template("braille.html")
+@app.route("/audio/", methods=["GET", "POST"])
+def audio():
+    return render_template("audio.html")
 
 
 @app.route("/texts/", methods=["GET", "POST"])
@@ -200,6 +250,19 @@ def dyslexia():
 @app.route("/plsnoopenme")
 def open_sockets():
     return render_template("openVoiceLine.html")
+
+@app.route("/admin/")
+def admin():
+    return render_template('admin.html')
+
+@app.route('/delete-user/<username>', methods=['POST'])
+def delete_user(username):
+    # Find the user object and remove it from the global list
+    global USERS
+    USERS = [user for user in USERS if user.username != username]
+    
+    # Send the admin back to the list page
+    return redirect(url_for('admin_panel'))
 
 
 @socketio.on("audio_stream")
