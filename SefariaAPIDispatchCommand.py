@@ -115,9 +115,46 @@ BOOK_NAMES=[
     "daniel",
     "ezra",
     "nechemia",
-    "divrei hayamim",
+    "divrei hayamim"
 ]
 
+MisheardAliases={
+"do iran me":"devarim",
+"dude or on me":"devarim",
+"dinner or on me":"devarim",
+"dude ron me":"devarim",
+"do randomly":"devarim",
+"drawn to me":"devarim",
+"due to on me":"devarim",
+"to on me":"devarim",
+"to draw":"devarim",
+"de var him":"devarim",
+"de var":"devarim",
+"devour":"devarim",
+"de var en":"devarim",
+"der var":"devarim",
+"de var on the arm":"devarim",
+"of arm":"devarim",
+"by mid bar":"numbers",
+"shumacher":"shemot",
+"smoke":"shemot",
+"schumer":"shemot",
+"smells of the":"shemot",
+"she most":"shemot",
+"sure most":"shemot",
+"berets sheet":"bereshit",
+"duration":"bereshit",
+"bearish it":"bereshit",
+"very chic":"bereshit",
+"coachella":"ecclestiastes",
+"to heal and":"psalms",
+"to hell and":"psalms",
+"tell him":"psalms",
+"to heal":"psalms",
+"to hell":"psalms",
+"sounds":"psalms",
+"some":"psalms",
+}
 # Function to convert English words like "ten" into the number 10
 def words_to_number(text):
         # Convert to lowercase and remove hyphens
@@ -209,6 +246,12 @@ def words_to_number(text):
         return number
 
 # Function to convert Hebrew book names to English names
+def map_aliases(text,mylist):
+    text = text.lower()
+    for alias in sorted(mylist, key=len, reverse=True):
+        if alias in text:
+            text = text.replace(alias, mylist[alias])
+    return text
 def map_tanach_hebrew_to_english(hebrew):
     # Convert to lowercase
     hebrew = hebrew.lower()
@@ -317,6 +360,7 @@ def dispatch_command(input):
         # Check if no input was provided
         if input==None:
             return "nothing was inputted"
+        input=map_aliases(input,MisheardAliases)
         # Remove noise from the beginning of the input
         input=trim_noise(input)
         # Fix common speech recognition errors for commentaries

@@ -13,7 +13,7 @@ def create_recognizer():
     """Create a new per-client recognizer instance to avoid thread conflicts"""
     return vosk.KaldiRecognizer(model, 16000)
 
-def listen(recognizer, data):        #listens to mic and returns text
+def listen(recognizer, data,PartialData=None):        #listens to mic and returns text
     """Process audio chunk with given recognizer instance.
     Returns (status, text) where status is 'final', 'partial', or None.
     """
@@ -22,7 +22,7 @@ def listen(recognizer, data):        #listens to mic and returns text
             result = recognizer.Result()#gets result from recognizer
             # Use .get() so a silent/noise chunk with no lattice path returns "" instead of raising KeyError
             text = json.loads(result).get("text", "")
-            if not PartialData:
+            if PartialData:
                 text=PartialData+text
             if text:
                 print(f"[STT] Recognized: {text}")
