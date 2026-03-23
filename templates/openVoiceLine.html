@@ -1,65 +1,96 @@
+<!-- HTML document setup -->
 <!DOCTYPE html>
 <html>
+<!-- Head section with metadata and scripts -->
 <head>
+    <!-- Page title shown in browser tab -->
     <title>Voice Query</title>
-    <!-- Socket.IO Client Library -->
+    <!-- Load Socket.IO library for real-time communication with server -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
+
+<!-- Body section with visible content -->
 <body>
+    <!-- Main heading -->
     <h1>Voice Search</h1>
+    
+    <!-- Button to start/stop microphone recording -->
     <button id="recordBtn">Click to Ask (Mic)</button>
+    
+    <!-- Displays the current status (Idle, Listening, Done, etc.) -->
     <p>Status: <span id="status">Idle</span></p>
+    
+    <!-- Shows the text that was recognized from the microphone -->
     <p>Text: <span id="output">...</span></p>
 
+    <!-- JavaScript code for microphone and audio handling -->
     <script>
+        // Create socket connection to communicate with the Python backend
         const socket = io();
-        let audioContext;
-        let processor;
-        let microphone;
+        let audioContext;  // Web Audio API context for processing microphone input
+        let processor;     // Audio processor that captures microphone data
+        let microphone;    // Microphone stream object
 
+        // Async function to request microphone access and start listening
         async function startStreaming() {
+            // Update status to show we're listening
             document.getElementById('status').innerText = "Listening...";
             
-            // 1. Get Mic Access
+            // 1. Ask the user for microphone permission
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             
-            // 2. Set up Audio Processing (16kHz for Vosk)
+            // 2. Set up audio processing at 16kHz sample rate (for speech recognition)
             audioContext = new AudioContext({ sampleRate: 16000 });
             microphone = audioContext.createMediaStreamSource(stream);
             processor = audioContext.createScriptProcessor(4096, 1, 1);
 
+            // Connect the audio processing pipeline
             microphone.connect(processor);
             processor.connect(audioContext.destination);
 
-            // 3. Convert and Send Loop
+            // 3. Listen for audio chunks and send them to the server
             processor.onaudioprocess = (e) => {
+                // Get audio data from microphone
                 const inputData = e.inputBuffer.getChannelData(0);
+                // Create buffer for converted audio
                 const pcmData = new Int16Array(inputData.length);
                 
-                // Convert Float32 to Int16
+                // Convert audio format from Float32 to Int16 (required by speech recognition)
                 for (let i = 0; i < inputData.length; i++) {
                     pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
                 }
                 
-                // Stream the raw bytes to Python
+                // Send the audio chunk to the Python backend via Socket.IO
                 socket.emit('audio_stream', pcmData.buffer);
             };
         }
 
+        // When user clicks the record button
         document.getElementById('recordBtn').onclick = () => {
+            // If audio context doesn't exist yet, start streaming
             if (!audioContext) {
                 startStreaming();
-            } else {
+            } 
+            // If audio is already streaming, stop it
+            else {
+                // Disconnect the processor
                 processor.disconnect();
-microphone.disconnect();
-audioContext.close();
-audioContext = null;
-document.getElementById('status').innerText = "Stopped";// Simple toggle to stop
+                // Disconnect the microphone
+                microphone.disconnect();
+                // Close the audio context
+                audioContext.close();
+                // Reset the audio context variable
+                audioContext = null;
+                // Update status to show we've stopped
+                document.getElementById('status').innerText = "Stopped";
             }
         };
 
+        // Listen for text result from the backend speech recognition
         socket.on('transcript_result', (text) => {
+            // Display the recognized text to the user
             document.getElementById('output').innerText = text;
+            // Update status to show we're done processing
             document.getElementById('status').innerText = "Done!";
         });
     </script>

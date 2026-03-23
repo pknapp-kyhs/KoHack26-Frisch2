@@ -1,18 +1,33 @@
+<!-- Extend base template -->
 {% extends 'base.html' %}
 
+<!-- Tab title -->
 {% block title %}
-    Admin Pannel
+    Admin Panel - User Management
 {% endblock %}
 
+<!-- Main content area -->
 {% block content %}
+    <!-- Main heading -->
     <h1>Admin Panel</h1>
+    
+    <!-- Add some vertical spacing -->
     <br><br><br>
+    
+    <!-- Subheading for the user list -->
     <h3>Current users:</h3>
+    
+    <!-- Unordered list to display all users -->
     <ul>
+    <!-- Loop through each user in the system -->
     {% for user in USERS %}
+        <!-- Create a list item for each user -->
         <li>
+            <!-- Display the username -->
             {{ user.username }} 
+            <!-- Create a form to delete this user -->
             <form action="{{ url_for('delete_user', username=user.username) }}" method="POST" style="display:inline;">
+                <!-- Button to submit the delete request -->
                 <button type="submit">Remove User</button>
             </form>
         </li>

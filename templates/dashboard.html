@@ -1,16 +1,24 @@
+<!-- Extend means "build on top of" the base.html template -->
 {% extends 'base.html' %}
 
+<!-- This text appears in the browser tab at the top -->
 {% block title %}
     {# Browser tab title for the authenticated dashboard. #}
     User Dashboard
 {% endblock %}
 
+<!-- Everything below this shows up in the main content area -->
 {% block content %}
-    <!-- Personalized greeting using the username stored in the session. -->
+    <!-- Personalized greeting that includes the logged-in user's name -->
     <h1>Welcome back {{username}}</h1>
 
-    <!-- Main navigation links for the accessibility tools in this app. -->
+    <!-- Navigation links to access the different tools available in the app -->
+    <!-- Link to the audio/voice search tool -->
     <a href="{{url_for('audio')}}">Blind Learning</a>
+    
+    <!-- Link to the Braille conversion tool -->
     <a href="{{url_for('texts')}}">Braille Source Sheets</a>
+    
+    <!-- Link to view Hebrew prayers with transliteration -->
     <a href="{{url_for('tefilla')}}">Tefillah</a>
 {% endblock %}
