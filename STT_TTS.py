@@ -2,7 +2,6 @@
 import pyttsx3
 import AudioBasedStuffs.transliteration as transliteration
 import vosk
-import pyaudio
 import json
 import time
 ###STT initialization ###
