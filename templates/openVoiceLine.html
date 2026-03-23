@@ -50,7 +50,11 @@
             if (!audioContext) {
                 startStreaming();
             } else {
-                location.reload(); // Simple toggle to stop
+                processor.disconnect();
+microphone.disconnect();
+audioContext.close();
+audioContext = null;
+document.getElementById('status').innerText = "Stopped";// Simple toggle to stop
             }
         };
 

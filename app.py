@@ -7,7 +7,7 @@ from flask import Flask, render_template, url_for, redirect, request, session, f
 from flask_socketio import SocketIO
 import PyPDF2
 import STTTUTTTS
-socketio = SocketIO(app, cors_allowed_origins="*")
+
 # Braille map for English and Hebrew
 import re
 from urllib.parse import quote
@@ -67,7 +67,7 @@ app.secret_key = _load_secret_key()
 
 # List to store user objects
 users = []
-
+socketio = SocketIO(app, cors_allowed_origins="*")
 class User:
     """
     Represents a user with username and password.
@@ -166,7 +166,7 @@ def dashboard():
     else:
         return redirect(url_for('signin'))
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -232,13 +232,15 @@ def dyslexia():
     """Handle dyslexia route."""
     return render_template("dyslexia.html")
 
-@app.route("plsnoopenme")
+@app.route("/plsnoopenme")
 def openSockets():
     return render_template('openVoiceLine.html')
 
-# @socketio.on('audio_stream')
-# def handle_audio(data):
-#     STTTUTTTS.STTTUTTTS()
-#     return 
+@socketio.on('audio_stream')
+def handle_audio(data):
+    audio_bytes = bytearray(data)
+    text= STTTUTTTS.STTTUTTTS(audio_bytes)
+    socketio.emit('transcript_result', text)
+
 # Run the Flask application on all interfaces at port 5050
 app.run(host="0.0.0.0",port=5050)

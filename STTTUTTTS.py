@@ -1,7 +1,7 @@
 import STT_TTS
 import SefariaAPIDispatchCommand
-def STTTUTTTS():
-    text=STT_TTS.listen()
+def STTTUTTTS(data):
+    text=STT_TTS.listen(data)
     if text:
         print(text)
         text=SefariaAPIDispatchCommand.dispatch_command(text)
