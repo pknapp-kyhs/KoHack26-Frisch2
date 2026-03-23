@@ -5,13 +5,17 @@
 {% block content %}
     <h1>Sign Up Now!</h1>
     <form method="post">
+        <button onclick="history.back()">Back</button><br><br>
         <label>Username: </label>
             <input type="text" name = "username" required> <br> <br>
         <label>Password: </label>
-            <input type="password" name = "password" required> 
-            <body>Password must be at least 8 characters long and contain both upper and lowercase letters as well as a special character.</body><br> <br>
-            <br>        
-            <button type="submit">Sign Up</button>
+            <input type="password" name = "password" required> <br>
+            <ul>
+                <li>At least 8 characters long</li>
+                <li>Contain both upper and lowercase letters</li>
+                <li>Contain a special character</li>
+            </ul><br>
+        <button type="submit">Sign Up</button>
     </form>
     
     {% with messages = get_flashed_messages(with_categories=true) %}
