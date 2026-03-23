@@ -14,14 +14,8 @@ class AudioEngine:
         status can be: 'partial' (intermediate result), 'final' (complete utterance), or None
         """
         try:
-            text = STT_TTS.listen(self.recognizer, audio_data)
-            
-            if text and text.strip():
-                # Only process as final if text is not just a partial result
-                # For now, treat any returned text as final
-                return ("final", text)
-            
-            return (None, "")
+            status, text = STT_TTS.listen(self.recognizer, audio_data)
+            return (status, text)
         except Exception as e:
             print(f"[AudioEngine Error] {e}")
             return (None, "")
