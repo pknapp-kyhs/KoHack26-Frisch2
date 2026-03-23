@@ -458,7 +458,7 @@ def delete_user(username):
 # SocketIO handler accepts raw audio, transcribes with STTTUTTTS, and broadcasts the transcript.
 @socketio.on("audio_stream")
 def handle_audio_stream(data):
-    audio_bytes = bytearray(data)
+    audio_bytes = bytes(data)
     text = STTTUTTTS.STTTUTTTS(audio_bytes)
     socketio.emit("transcript_result", text)
 
