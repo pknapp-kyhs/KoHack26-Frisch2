@@ -1,53 +1,78 @@
+<!-- Extend base template -->
+{% extends "base.html" %}
+
+<!-- Tab title -->
+{% block title %}Braille Source Sheets{% endblock %}
+
+<!-- Main content area -->
 {% block content %}
-    <!-- Page header -->
+    <!-- Page heading -->
     <h1>Braille Source Sheets</h1>
 
-    <!-- Buttons to choose input method: paste text or upload file -->
+    <!-- Button to select text pasting option -->
     <button id="pasteBtn">Paste Text</button>
+    
+    <!-- Button to select file upload option -->
     <button id="uploadBtn">Upload File</button>
 
-    <!-- Form for pasting text, hidden by default -->
+    <!-- Form for pasting text (hidden until user clicks Paste Text button) -->
     <form id="textForm" method="post" enctype="multipart/form-data" style="display:none;">
+        <!-- Large text area where user can paste their content -->
         <textarea name="text" rows="10" cols="50" placeholder="Paste your text here (English or Hebrew)"></textarea><br>
+        <!-- Submit button to convert text to Braille -->
         <button type="submit" name="action" value="convert">Convert to Braille</button>
     </form>
 
-    <!-- Form for uploading a file, hidden by default -->
+    <!-- Form for uploading a file (hidden until user clicks Upload File button) -->
     <form id="fileForm" method="post" enctype="multipart/form-data" style="display:none;">
+        <!-- File input that accepts txt and PDF files -->
         <input type="file" name="file" accept=".txt,.pdf"><br>
+        <!-- Submit button to convert uploaded file to Braille -->
         <button type="submit" name="action" value="convert">Convert to Braille</button>
     </form>
 
-    <!-- Display Braille output if conversion was performed -->
+    <!-- Show Braille output only if conversion was performed -->
     {% if braille %}
+    <!-- Heading for the converted Braille text -->
     <h2>Braille Output:</h2>
+    <!-- Display the Braille conversion in preformatted text (keeps spacing) -->
     <pre>{{ braille }}</pre>
+    <!-- Button to download the Braille output as a file -->
     <button onclick="downloadBraille()">Download Braille</button>
     {% endif %}
 
-    <!-- Link back to dashboard -->
+    <!-- Link back to the dashboard -->
     <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
 
-    <!-- JavaScript for toggling forms and downloading Braille -->
+    <!-- JavaScript code for interactivity -->
     <script>
-        // Show text paste form when Paste Text button is clicked
+        // When user clicks Paste Text button, show the text form and hide the file form
         document.getElementById('pasteBtn').onclick = function() {
             document.getElementById('textForm').style.display = 'block';
             document.getElementById('fileForm').style.display = 'none';
         };
-        // Show file upload form when Upload File button is clicked
+        
+        // When user clicks Upload File button, show the file form and hide the text form
         document.getElementById('uploadBtn').onclick = function() {
             document.getElementById('fileForm').style.display = 'block';
             document.getElementById('textForm').style.display = 'none';
         };
-        // Function to download the Braille text as a file
+        
+        // Function to let the user download the Braille text as a file
         function downloadBraille() {
+            // Create a blob (binary object) containing the Braille text
             const blob = new Blob([document.querySelector('pre').textContent], {type: 'text/plain'});
+            // Create a temporary URL for the blob
             const url = URL.createObjectURL(blob);
+            // Create an invisible link element
             const a = document.createElement('a');
+            // Set the link to point to our blob
             a.href = url;
+            // Set the filename for download
             a.download = 'braille.txt';
+            // Trigger the download by simulating a click
             a.click();
+            // Clean up the temporary URL
             URL.revokeObjectURL(url);
         }
     </script>

@@ -1,34 +1,35 @@
-# 1. BRING IN OUR TOOLS
-import requests  # This is our web browser tool. It fetches data from the internet.
-import re        # 're' stands for Regular Expressions. It is a powerful search-and-destroy tool for text.
+# Import the requests library to fetch data from the internet
+import requests
+# Import the re library for searching and replacing text patterns
+import re
 
+# Function to fetch text from the Sefaria database (a free Jewish texts library)
 def sefaria_api(command):
-    # 3. GO GET THE DATA
-    # We go to Sefaria, ask for the text, and convert their response into a Python dictionary (JSON)
+    """Fetch the Sefaria text for a query and return cleaned Hebrew and English snippets."""
+    # Build the URL to request the text from Sefaria's API
     url = f"https://www.sefaria.org/api/texts/{command}?context=0"
+    # Fetch the data from the URL and convert it to a Python dictionary
     data = requests.get(url).json()
     
-    # Grab the raw English and Hebrew. 
-    # (If we make a typo, it grabs an empty list [] so the program doesn't crash)
+    # Get the English translation (empty list if it doesn't exist) 
     raw_english = data.get("text", [])
+    # Get the Hebrew text (empty list if it doesn't exist)
     raw_hebrew = data.get("he", [])
     
-    # 4. CLEANUP STEP 1: GLUE THE PIECES TOGETHER
-    # Sefaria often gives us a list of sentences like: ['Sentence 1.', 'Sentence 2.']
-    # We want one normal paragraph. ' '.join() takes the list and glues them together with a space.
+    # If English is a list, join the items together with spaces into one paragraph
     if type(raw_english) == list:
         raw_english = " ".join(raw_english)
-        
+    
+    # If Hebrew is a list, join the items together with spaces into one paragraph    
     if type(raw_hebrew) == list:
         raw_hebrew = " ".join(raw_hebrew)
-        
-    # 5. CLEANUP STEP 2: THE REGEX NUKE (DESTROYING HTML)
-    # This line tells the computer: 
-    # "Look for a '<', find whatever is inside it, look for the closing '>', and replace that whole chunk with a blank space."
-    # This instantly deletes <br>, <i>, <b>, and any other hidden website code.
+    
+    # Remove all HTML tags from the English text (things like <br>, <i>, <b>, etc.)
     clean_english = re.sub(r'<[^>]+>', ' ', raw_english)
+    # Remove all HTML tags from the Hebrew text
     clean_hebrew = re.sub(r'<[^>]+>', ' ', raw_hebrew)
     
-    # 6. SHOW THE HUMAN THE RESULTS
+    # Create a formatted result string with Hebrew and English text
     results = f"Hebrew:\n{clean_hebrew}\n\nEnglish:\n{clean_english}"
+    # Return the results to the caller
     return results

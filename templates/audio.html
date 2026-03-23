@@ -1,78 +1,98 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Voice Query</title>
-    <!-- Socket.IO Client Library -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-</head>
-<body>
+<!-- Extend means "build on top of" the base.html template -->
+{% extends 'base.html' %}
+
+<!-- This text appears in the browser tab at the top -->
+{% block title %}
+    {# Browser tab title for the voice search page. #}
+    Blind Learning - Audio
+{% endblock %}
+
+<!-- Everything below this shows up in the main content area -->
+{% block content %}
+    <!-- Main heading for the audio learning feature -->
+    <h1>Audio Learning</h1>
+    
+    <!-- Description of what this tool does -->
+    <p>Use your voice to search for pesukim and meforshim</p>
+
+    <!-- Subheading for the voice search section -->
     <h1>Voice Search</h1>
+    
+    <!-- Button to start/stop microphone recording -->
     <button id="recordBtn">Click to Ask (Mic)</button>
+    
+    <!-- Displays the current status (Idle, Listening, Done, etc.) -->
     <p>Status: <span id="status">Idle</span></p>
+    
+    <!-- Shows the text that was recognized from the microphone -->
     <p>Text: <span id="output">...</span></p>
 
+    <!-- Load Socket.IO library for real-time communication with server -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
     <script>
+        // Create socket connection to communicate with the Python backend
         const socket = io();
         let audioContext;
         let processor;
         let microphone;
 
-        // 🔊 TEXT-TO-SPEECH FUNCTION
-        function speak(text) {
-            if (!text) return;
-
-            // Stop any current speech
-            speechSynthesis.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9;
-            utterance.pitch = 1;
-
-            speechSynthesis.speak(utterance);
-        }
-
         async function startStreaming() {
-            document.getElementById('status').innerText = "Listening...";
+            const status = document.getElementById('status');
+            status.innerText = "Requesting microphone...";
             
-            // 1. Get Mic Access
+            // Check if browser supports microphone access
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error("This browser does not support microphone access.");
+            }
+
+            // 1. Ask user for microphone permission
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             
-            // 2. Set up Audio Processing (16kHz for Vosk)
+            // 2. Set up audio processing at 16kHz sample rate (required for speech recognition)
             audioContext = new AudioContext({ sampleRate: 16000 });
             microphone = audioContext.createMediaStreamSource(stream);
             processor = audioContext.createScriptProcessor(4096, 1, 1);
 
             microphone.connect(processor);
             processor.connect(audioContext.destination);
+            status.innerText = "Listening...";
 
-            // 3. Convert and Send Loop
+            // 3. Listen for audio chunks and send them to the server
             processor.onaudioprocess = (e) => {
                 const inputData = e.inputBuffer.getChannelData(0);
                 const pcmData = new Int16Array(inputData.length);
                 
+                // Convert Float32 to Int16
                 for (let i = 0; i < inputData.length; i++) {
                     pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
                 }
                 
+                // Stream the raw bytes to Python
                 socket.emit('audio_stream', pcmData.buffer);
             };
         }
 
-        document.getElementById('recordBtn').onclick = () => {
+        // When user clicks the record button
+        document.getElementById('recordBtn').onclick = async () => {
             if (!audioContext) {
-                startStreaming();
+                // Start streaming if not already started
+                try {
+                    await startStreaming();
+                } catch (error) {
+                    // Show error message if microphone fails
+                    document.getElementById('status').innerText = error.message || "Mic unavailable";
+                    console.error(error);
+                }
             } else {
-                processor.disconnect();
-                microphone.disconnect();
-                audioContext.close();
-                audioContext = null;
-                document.getElementById('status').innerText = "Stopped";
+                location.reload(); // Simple toggle to stop
             }
         };
 
-        // 🧠 SHOW FINAL TRANSCRIPT
         socket.on('transcript_result', (text) => {
+            // Display the recognized text to the user
             document.getElementById('output').innerText = text;
+            // Update status to show we're done processing
             document.getElementById('status').innerText = "Done!";
         });
 
@@ -86,5 +106,6 @@
             document.getElementById('output').innerText = text + "...";
         });
     </script>
-</body>
-</html>
+
+    <p><br><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+{% endblock %}

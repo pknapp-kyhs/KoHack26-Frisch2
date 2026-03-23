@@ -1,27 +1,47 @@
+<!-- Extend means "build on top of" the base.html template -->
 {% extends "base.html" %}
 
+<!-- This text appears in the browser tab at the top -->
 {% block title %}Sign Up{% endblock %}
 
+<!-- Everything below this shows up in the main content area -->
 {% block content %}
+    <!-- Encourage visitors to create an account for the accessibility suite. -->
+    <!-- Main heading for the registration page -->
     <h1>Sign Up Now!</h1>
+    
+    <!-- Form that sends new account details to the server -->
     <form method="post">
+        <!-- Button that takes user back to previous page in browser history -->
         <button onclick="history.back()">Back</button><br><br>
+        
+        <!-- Label and text box for choosing a username -->
         <label>Username: </label>
             <input type="text" name = "username" required> <br> <br>
+        
+        <!-- Label and password box (masked dots instead of visible text) -->
         <label>Password: </label>
             <input type="password" name = "password" required> <br>
+            
+            <!-- Bulleted list of password requirements the user must follow -->
             <ul>
                 <li>At least 8 characters long</li>
                 <li>Contain both upper and lowercase letters</li>
                 <li>Contain a special character</li>
             </ul><br>
+        
+        <!-- Button to submit the form and create a new account -->
         <button type="submit">Sign Up</button>
     </form>
     
+    <!-- Display any messages like "username already exists" error messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
+        <!-- Show success or validation errors raised during registration. -->
         {% if messages %}
+            <!-- List to display all messages to the user -->
             <ul>
             {% for category, message in messages %}
+                <!-- Each message is shown as a list item with a category label -->
                 <li class="{{ category }}">{{ message }}</li>
             {% endfor %}
             </ul>

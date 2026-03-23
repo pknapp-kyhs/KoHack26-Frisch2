@@ -1,98 +1,158 @@
+<!-- Extend base template -->
 {% extends 'base.html' %}
 
+<!-- Tab title -->
 {% block title %}
-    Tefilla
+    Tefilla - Hebrew Prayer
 {% endblock %}
 
+<!-- Main content area -->
 {% block content %}
+    <!-- Main heading -->
     <h1>Tefilla</h1>
+    <!-- Choose a prayer to load its Hebrew text and transliteration for guided reading. -->
 
+    <!-- Form to select which prayer to display -->
     <form method="get">
+        <!-- Label for the dropdown -->
         <label for="prayer">Prayer:</label>
+        <!-- Dropdown menu with prayer options -->
         <select name="prayer" id="prayer">
+            <!-- Loop through available prayers -->
             {% for prayer in prayers|default([]) %}
+                <!-- Option element showing prayer name, selected if it matches current prayer -->
                 <option value="{{ prayer.ref }}" {% if prayer.ref == selected_prayer|default('') %}selected{% endif %}>
                     {{ prayer.label }}
                 </option>
             {% endfor %}
         </select>
+        <!-- Button to load the selected prayer -->
         <button type="submit">Load</button>
     </form>
 
+    <!-- Speed control for text-to-speech -->
     <div style="margin-top: 16px;">
         <label for="wpm-slider">Words per minute:</label>
+        <!-- Slider to control playback speed (60-300 words per minute) -->
         <input type="range" id="wpm-slider" min="60" max="300" value="120">
+        <!-- Display the current speed value -->
         <span id="wpm-value">120</span>
     </div>
 
+    <!-- Checkbox to show/hide transliteration -->
     <div style="margin-top: 12px;">
+        <!-- Optional checkbox to reveal the transliteration under each Hebrew line. -->
         <label for="show-transliteration">
+            <!-- Checkbox input -->
             <input type="checkbox" id="show-transliteration">
+            <!-- Label text -->
             Show transliteration
         </label>
     </div>
 
+    <!-- Playback control buttons -->
     <div style="margin-top: 12px;">
         <button type="button" id="play-pause-button">Pause</button>
+        <!-- Button to go back to the beginning and restart -->
         <button type="button" id="restart-button">Restart</button>
     </div>
 
+    <!-- Display error message if prayer failed to load -->
     {% if error_message %}
         <p>{{ error_message }}</p>
     {% endif %}
 
     <div id="prayer-reader" style="margin-top: 24px;"></div>
 
+    <!-- JavaScript for prayer display and playback -->
     <script>
+        // Load the prayer lines from the server (sent as JSON data)
         const prayerLines = {{ prayer_lines|default([])|tojson }};
+        // Get reference to the prayer display container
         const reader = document.getElementById("prayer-reader");
+        // Get reference to the speed slider
         const wpmSlider = document.getElementById("wpm-slider");
+        // Get reference to the speed value display
         const wpmValue = document.getElementById("wpm-value");
+        // Get reference to the transliteration checkbox
         const showTransliterationCheckbox = document.getElementById("show-transliteration");
+        // Get reference to the play/pause button
         const playPauseButton = document.getElementById("play-pause-button");
+        // Get reference to the restart button
         const restartButton = document.getElementById("restart-button");
+        
+        // Track which line we're currently on
         let currentLineIndex = 0;
+        // Track which word in the current line we're on
         let currentWordIndex = 0;
+        // Timer ID for scheduling the next word
         let timerId = null;
+        // Whether playback is currently active
         let isPlaying = prayerLines.length > 0;
+        // Whether a word is currently being spoken
         let isSpeakingWord = false;
 
-        const getWords = (text) => text.split(/\s+/).filter(Boolean);
+        // Track which line and word the speech synthesizer is currently on.
 
+        // Helper function to split text into words
+        const getWords = (text) => text.split(/\s+/).filter(Boolean);
+        // Break a string into words while ignoring extra whitespace to highlight.
+
+        // Function to render (display) the prayer text with highlighting
         function renderPrayer() {
+            // Redraw the prayer reader and emphasize the current word.
+            // Clear the prayer reader container
             reader.innerHTML = "";
+            // Loop through each line in the prayer
             prayerLines.forEach(function (line, lineIndex) {
+                // Create a wrapper div for this line
                 const lineWrapper = document.createElement("div");
+                // Create div for Hebrew text
                 const hebrewLine = document.createElement("div");
+                // Set direction to right-to-left for Hebrew
                 hebrewLine.dir = "rtl";
+                // Make Hebrew text larger
                 hebrewLine.style.fontSize = "2rem";
                 hebrewLine.style.marginBottom = "6px";
 
+                // Split Hebrew and transliteration into words
                 const hebrewWords = getWords(line.hebrew);
                 const transliterationWords = getWords(line.transliteration);
 
+                // If this line is before the current line, show all text
                 if (lineIndex < currentLineIndex) {
                     hebrewLine.textContent = line.hebrew;
-                } else if (lineIndex === currentLineIndex) {
+                } 
+                // If this is the current line, show words up to current word
+                else if (lineIndex === currentLineIndex) {
                     hebrewWords.forEach(function (word, wordIndex) {
+                        // Skip words after the current word
                         if (wordIndex > currentWordIndex) return;
+                        // Create a span for this word
                         const wordSpan = document.createElement("span");
                         wordSpan.textContent = word + " ";
+                        // Make the current word bold
                         if (wordIndex === currentWordIndex) wordSpan.style.fontWeight = "700";
                         hebrewLine.appendChild(wordSpan);
                     });
                 }
 
+                // Add Hebrew text to the line wrapper
                 lineWrapper.appendChild(hebrewLine);
 
+                // Show transliteration if checkbox is checked
                 if (showTransliterationCheckbox.checked) {
+                    // Create div for transliteration
                     const transliterationLine = document.createElement("div");
                     transliterationLine.style.marginBottom = "18px";
                     transliterationLine.style.color = "#444";
 
+                    // Show transliteration for completed lines
                     if (lineIndex < currentLineIndex) {
                         transliterationLine.textContent = line.transliteration;
-                    } else if (lineIndex === currentLineIndex) {
+                    } 
+                    // Show transliteration for current line
+                    else if (lineIndex === currentLineIndex) {
                         transliterationWords.forEach(function (word, wordIndex) {
                             if (wordIndex > currentWordIndex) return;
                             const wordSpan = document.createElement("span");
@@ -107,43 +167,60 @@
                     lineWrapper.style.marginBottom = "18px";
                 }
 
+                // Add the line to the display
                 reader.appendChild(lineWrapper);
             });
         }
 
+        // Move to the next word in the prayer
         function stepForward() {
             if (!prayerLines.length) return false;
+            // Get words in the current line
             const currentLineWords = getWords(prayerLines[currentLineIndex].hebrew);
 
+            // If there are more words in this line, move to next word
             if (currentWordIndex < currentLineWords.length - 1) {
                 currentWordIndex += 1;
-            } else if (currentLineIndex < prayerLines.length - 1) {
+            } 
+            // If this is the last word in the line and there are more lines, go to next line
+            else if (currentLineIndex < prayerLines.length - 1) {
                 currentLineIndex += 1;
                 currentWordIndex = 0;
-            } else {
+            } 
+            // If we're at the end, stop playback
+            else {
                 stopPlayback();
                 return false;
             }
 
+            // Redisplay the prayer with new position
             renderPrayer();
             return true;
         }
 
+        // Stop playback and reset the button text
         function stopPlayback() {
             if (timerId !== null) {
                 clearTimeout(timerId);
                 timerId = null;
             }
+            // Stop any words currently being spoken
             window.speechSynthesis.cancel();
             isSpeakingWord = false;
             isPlaying = false;
+            // Change button text back to "Play"
             playPauseButton.textContent = "Play";
         }
 
+        // Speak the current word using the browser's text-to-speech
         function speakCurrentWord() {
             if (!isPlaying || !prayerLines.length || isSpeakingWord) return;
+            // Get words in the transliteration
             const transliterationWords = getWords(prayerLines[currentLineIndex].transliteration);
+            // Get the word to speak
             const wordToSpeak = transliterationWords[currentWordIndex];
+            
+            // If no word to speak, schedule next word after a delay
             if (!wordToSpeak) {
                 timerId = setTimeout(function () {
                     if (stepForward()) speakCurrentWord();
@@ -151,19 +228,26 @@
                 return;
             }
 
+            // Create a speech utterance (the word to be spoken)
             const utterance = new SpeechSynthesisUtterance(wordToSpeak);
+            // Set the speech rate based on the WPM slider
             utterance.rate = Math.max(0.5, Math.min(2, Number(wpmSlider.value) / 120));
+            // Set language to English (for transliteration)
             utterance.lang = "en-US";
+            // Mark that we're speaking
             isSpeakingWord = true;
 
+            // When the word finishes speaking, move to next word
             utterance.onend = function () {
                 isSpeakingWord = false;
                 if (!isPlaying) return;
+                // Schedule the next word with appropriate delay
                 timerId = setTimeout(function () {
                     if (stepForward()) speakCurrentWord();
                 }, 60000 / Number(wpmSlider.value));
             };
 
+            // If there's an error speaking, still move to next word
             utterance.onerror = function () {
                 isSpeakingWord = false;
                 if (!isPlaying) return;
@@ -172,39 +256,56 @@
                 }, 60000 / Number(wpmSlider.value));
             };
 
+            // Start speaking this word
             window.speechSynthesis.speak(utterance);
         }
 
+        // Start the prayer playback
         function startPlayback() {
             if (!prayerLines.length) return;
+            // Clear any existing timers
             if (timerId !== null) {
                 clearTimeout(timerId);
                 timerId = null;
             }
+            // Stop any words being spoken
             window.speechSynthesis.cancel();
             isSpeakingWord = false;
+            // Mark playback as active
             isPlaying = true;
+            // Change button text to "Pause"
             playPauseButton.textContent = "Pause";
+            // Redisplay the prayer
             renderPrayer();
+            // Start speaking the first word
             speakCurrentWord();
         }
 
+        // Go back to the beginning and start over
         function restartPlayback() {
             currentLineIndex = 0;
             currentWordIndex = 0;
+            // Redisplay the prayer
             renderPrayer();
+            // Start playback from the beginning
             startPlayback();
         }
 
+        // Update the WPM label when slider changes
         const updateWpmLabel = () => wpmValue.textContent = wpmSlider.value;
+        // Keep the words-per-minute label in sync with the slider.
 
+        // When user changes the speed slider, update label and restart playback
         wpmSlider.addEventListener("input", function () {
+            // Update the displayed speed and restart playback for the new pace.
             updateWpmLabel();
             if (isPlaying) startPlayback();
         });
 
+        // When user changes the transliteration checkbox, redisplay the prayer
         showTransliterationCheckbox.addEventListener("change", renderPrayer);
 
+        // When user clicks play/pause button, toggle between playing and paused
         playPauseButton.addEventListener("click", function () {
             if (isPlaying) {
                 stopPlayback();
@@ -213,13 +314,18 @@
             }
         });
 
+        // When user clicks restart button, restart from the beginning
         restartButton.addEventListener("click", restartPlayback);
 
+        // Initialize the display
         updateWpmLabel();
         renderPrayer();
+        
+        // If there are prayer lines, start playback automatically
         if (prayerLines.length) {
             startPlayback();
         } else {
+            // If no prayer lines, disable the buttons
             playPauseButton.disabled = true;
             restartButton.disabled = true;
         }

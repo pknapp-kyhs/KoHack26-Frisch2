@@ -1,4 +1,6 @@
+# Import the speech-to-text and text-to-speech module
 import AudioBasedStuffs.STT_TTS as STT_TTS
+# Import the command processor that fetches text from Sefaria
 import SefariaAPIDispatchCommand
 
 class AudioEngine:

@@ -1,9 +1,18 @@
+<!-- Extend means "build on top of" the base.html template -->
 {% extends "base.html" %}
 
+<!-- This text appears in the browser tab at the top -->
 {% block title %}Account Page{% endblock %}
 
+<!-- Everything below this shows up in the main content area -->
 {% block content %}
+    <!-- Simple landing copy that points visitors to the authentication flows -->
+    <!-- Main heading for the home page -->
     <h1>Name</h1>
+    
+    <!-- Link to go to the sign-in page -->
     <p><a href="{{url_for('signin')}}">Sign In</a></p>
+    
+    <!-- Link to go to the sign-up page -->
     <p><a href="{{url_for('signup')}}">Sign Up</a></p>
 {% endblock %}

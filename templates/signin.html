@@ -1,15 +1,28 @@
+<!-- Extend means "build on top of" the base.html template -->
 {% extends "base.html" %}
 
+<!-- This text appears in the browser tab at the top -->
 {% block title %}Sign In{% endblock %}
 
+<!-- Everything below this shows up in the main content area -->
 {% block content %}
+    <!-- Main heading for the sign-in page -->
     <h1>Sign In</h1>
+    
+    <!-- Button that takes user back to previous page in browser history -->
     <button onclick="history.back()">Back</button><br><br>
+    
+    <!-- Form that sends username and password to the server -->
     <form method="post">
+        <!-- Label and text box for entering username -->
         <label>Username: </label>
         <input type="text" name="username" id="username"><br><br>
+        
+        <!-- Label and password box (masked dots instead of visible text) -->
         <label>Password: </label>
         <input type="password" name="password" id="password"><br><br>
+        
+        <!-- Button to submit the form and attempt login -->
         <button type="submit">Log in</button>
     </form>
 {% endblock %}
