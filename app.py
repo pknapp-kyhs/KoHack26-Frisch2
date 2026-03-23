@@ -12,7 +12,7 @@ from flask import Flask, render_template, redirect, url_for, request, session, f
 from flask_socketio import SocketIO
 import PyPDF2
 import AudioBasedStuffs.STTTUTTTS as STTTUTTTS
-import validate_passwd
+from validate_passwd import validate_passwd
 from werkzeug.security import check_password_hash, generate_password_hash
 
 BRAILLE_MAP = {
@@ -210,4 +210,4 @@ def handle_audio_stream(data):
 
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5050)
+    socketio.run(app, host="0.0.0.0", port=5050, allow_unsafe_werkzeug=True)
