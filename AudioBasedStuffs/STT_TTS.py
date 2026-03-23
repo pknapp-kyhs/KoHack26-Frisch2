@@ -14,7 +14,9 @@ def create_recognizer():
     return vosk.KaldiRecognizer(model, 16000)
 
 def listen(recognizer, data):        #listens to mic and returns text
-    """Process audio chunk with given recognizer instance"""
+    """Process audio chunk with given recognizer instance.
+    Returns (status, text) where status is 'final', 'partial', or None.
+    """
     try:
         if recognizer.AcceptWaveform(data):#if data is recognized
             result = recognizer.Result()#gets result from recognizer
@@ -22,8 +24,8 @@ def listen(recognizer, data):        #listens to mic and returns text
             text = json.loads(result).get("text", "")
             if text:
                 print(f"[STT] Recognized: {text}")
-                return text
-            return None
+                return ("final", text)
+            return (None, "")
         else:
             # Return partial result if available
             partial_result = recognizer.PartialResult()
@@ -31,13 +33,13 @@ def listen(recognizer, data):        #listens to mic and returns text
                 partial_json = json.loads(partial_result)
                 partial_text = partial_json.get("partial", "")
                 if partial_text:
-                    return partial_text
-        return None
+                    return ("partial", partial_text)
+        return (None, "")
     except Exception as e:
         print(f"[STT Error] {e}")
         # Reset the recognizer so it can recover from a broken lattice state
         recognizer.Reset()
-        return None
+        return (None, "")
 
 ### TTS initialization ###
 engine = pyttsx3.init()
