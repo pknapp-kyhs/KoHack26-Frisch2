@@ -104,6 +104,7 @@ BRAILLE_MAP = {
 #
 # Secret key helpers keep Flask sessions stable between restarts.
 def _get_secret_file() -> Path:
+    """Return the filesystem path where the Flask secret is stored or created."""
     env_path = os.environ.get("VIRTUAL_ENV")
     if env_path:
         return Path(env_path) / "flask_secret_key.txt"
@@ -112,10 +113,12 @@ def _get_secret_file() -> Path:
 #
 # Create the secret key file when missing and return the stored value.
 def _load_secret_key() -> str:
+    """Read the secret key from disk or generate and persist a new one."""
     secret_path = _get_secret_file()
     if secret_path.exists():
         return secret_path.read_text().strip()
 
+    # Ensure the directory exists before persisting the secret key.
     secret_path.parent.mkdir(parents=True, exist_ok=True)
     new_secret = secrets.token_urlsafe(48)
     secret_path.write_text(new_secret)
@@ -132,13 +135,14 @@ app.secret_key = _load_secret_key()
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 
-# Simple user model storing hashed credentials in memory.
 @dataclass
 class User:
+    """In-memory user record that stores the normalized username and hashed credential."""
     username: str
     password_hash: str
 
     def verify_password(self, raw_password: str) -> bool:
+        """Return whether the provided password matches this user's hash."""
         return check_password_hash(self.password_hash, raw_password)
 
 
@@ -149,25 +153,32 @@ USERS: list[User] = []
 #
 # Wrap password hashing so registration stays consistent.
 def _create_user_entry(username: str, raw_password: str) -> User:
+    """Generate a new User instance with a hashed password so the route helpers stay uniform."""
     return User(username=username, password_hash=generate_password_hash(raw_password))
 
 
+#
 # Lookup helper that normalizes the username before searching.
 def get_user(username: str) -> Optional[User]:
+    """Return the stored User whose normalized username matches the request value."""
     username = username.strip().lower()
     return next((user for user in USERS if user.username.lower() == username), None)
 
 
+#
 # Register a new name once the normalized version is unused.
 def register_user(username: str, raw_password: str) -> bool:
+    """Add a new account to USERS if the normalized name is still available."""
     if get_user(username):
         return False
     USERS.append(_create_user_entry(username, raw_password))
     return True
 
 
+#
 # Compare hashed credentials and return whether they match.
 def authenticate(username: str, raw_password: str) -> bool:
+    """Confirm the credentials match a known user."""
     user = get_user(username)
     return bool(user and user.verify_password(raw_password))
 
@@ -175,11 +186,13 @@ def authenticate(username: str, raw_password: str) -> bool:
 #
 # Walks the input string and converts each character to a Braille glyph.
 def convert_to_braille(text: str) -> str:
+    """Translate each character into the configured Braille glyphs, leaving unknowns untouched."""
     return "".join(BRAILLE_MAP.get(char.lower(), char) for char in text)
 
 
 # Reads text/plain or PDF uploads and returns their extracted text.
 def extract_text_from_upload(uploaded_file) -> str:
+    """Extract text content from plain text or PDF files submitted via upload."""
     if not uploaded_file or not uploaded_file.filename:
         return ""
 
@@ -215,6 +228,7 @@ PRAYER_OPTIONS = [
 #
 # Normalize Sefaria HTML responses and split them into cleaned lines.
 def clean_sefaria_text(text: str) -> list[str]:
+    """Strip HTML tags and collapse whitespace to produce tidy sentence lines."""
     text = text.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
     text = re.sub(r"<[^>]+>", "", text)
     lines = []
@@ -228,6 +242,7 @@ def clean_sefaria_text(text: str) -> list[str]:
 #
 # Recursively flatten nested Sefaria content into a list of strings.
 def extract_lines_from_sefaria_content(content) -> list[str]:
+    """Walk the mixed data structure returned by Sefaria and gather text lines."""
     if isinstance(content, str):
         return clean_sefaria_text(content)
     if isinstance(content, list):
@@ -241,6 +256,7 @@ def extract_lines_from_sefaria_content(content) -> list[str]:
 #
 # Annotate Hebrew lines with their transliteration for rendering.
 def build_transliterated_lines(hebrew_lines: list[str]) -> list[dict[str, str]]:
+    """Return dict entries that pair raw Hebrew with its transliteration for templates."""
     return [
         {
             "hebrew": line,
@@ -253,6 +269,7 @@ def build_transliterated_lines(hebrew_lines: list[str]) -> list[dict[str, str]]:
 #
 # Fetch prayer text from Sefaria, clean it, and pair each line with transliteration.
 def get_prayer_text_from_sefaria(prayer_ref: str) -> list[dict[str, str]]:
+    """Call the Sefaria REST API for a prayer ref and prepare the lines for display."""
     encoded_ref = quote(prayer_ref.replace(" ", "_"), safe=",")
     url = f"https://www.sefaria.org/api/texts/{encoded_ref}?context=0"
     response = requests.get(url, timeout=10)
@@ -266,6 +283,7 @@ USERS.append(_create_user_entry("Charles", "Charles"))
 #
 # Utility that flashes a message before redirecting so controllers stay tidy.
 def _flash_and_redirect(message: str, category: str, endpoint: str) -> str:
+    """Flash a notification and redirect the user to the provided endpoint."""
     flash(message, category)
     return redirect(url_for(endpoint))
 
@@ -273,6 +291,7 @@ def _flash_and_redirect(message: str, category: str, endpoint: str) -> str:
 # Public landing page.
 @app.route("/", methods=["GET"])
 def index():
+    """Render the landing page that prompts visitors to authenticate."""
     return render_template("index.html")
 
 
@@ -280,6 +299,7 @@ def index():
 # Sign-in form and handler for POSTed credentials.
 @app.route("/signin/", methods=["GET", "POST"])
 def signin():
+    """Handle both rendering the login form and processing POSTed credentials."""
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
@@ -304,6 +324,7 @@ def signin():
 # Dashboard view requires a logged-in session.
 @app.route("/dashboard/")
 def dashboard():
+    """Show the authenticated dashboard, redirecting unauthenticated users."""
     username = session.get("username")
     # Deny access when no authenticated session exists.
     if not username:
@@ -316,6 +337,7 @@ def dashboard():
 # Registration page that enforces the password policy before storing accounts.
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
+    """Present the account creation form and enforce the password policy."""
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
@@ -345,6 +367,7 @@ def signup():
 # Audio demo page placeholder.
 @app.route("/audio/", methods=["GET", "POST"])
 def audio():
+    """Render the audio learning placeholder that hosts the voice search demo."""
     return render_template("audio.html")
 
 
@@ -352,6 +375,7 @@ def audio():
 # Braille entry point (reusing the audio template for now).
 @app.route("/braille/", methods=["GET", "POST"])
 def braille():
+    """Return the temporary braille view while a dedicated UI is still in progress."""
     return render_template("audio.html")
 
 
@@ -359,6 +383,7 @@ def braille():
 # Text conversion page that accepts text or file uploads.
 @app.route("/texts/", methods=["GET", "POST"])
 def texts():
+    """Accept text or PDF uploads and convert them into Braille output for the template."""
     braille = None
     if request.method == "POST":
         # Prefer the textarea but fall back to file uploads when empty.
@@ -375,6 +400,7 @@ def texts():
 # Prayer-selection page fetching Hebrew text from Sefaria.
 @app.route("/tefilla/", methods=["GET", "POST"])
 def tefilla():
+    """Display prayer reader controls and fetch the selected prayer through Sefaria."""
     selected_prayer = request.args.get("prayer", PRAYER_OPTIONS[0]["ref"])
     if not any(option["ref"] == selected_prayer for option in PRAYER_OPTIONS):
         selected_prayer = PRAYER_OPTIONS[0]["ref"]
@@ -404,6 +430,7 @@ def tefilla():
 # Dyslexia help page (static placeholder).
 @app.route("/dyslexia/", methods=["GET", "POST"])
 def dyslexia():
+    """Render the placeholder dyslexia resources view."""
     return render_template("dyslexia.html")
 
 
@@ -411,18 +438,21 @@ def dyslexia():
 # WebSocket demo route for the voice line UI.
 @app.route("/plsnoopenme")
 def open_sockets():
+    """Serve the voice line UI that connects to SocketIO for streaming audio."""
     return render_template("openVoiceLine.html")
 
 #
 # Admin landing page (static template for now).
 @app.route("/admin/")
 def admin():
+    """Render the admin console that lists registered users."""
     return render_template('admin.html')
 
 #
 # Removes a user entry from the in-memory store (likely called via admin UI).
 @app.route('/delete-user/<username>', methods=['POST'])
 def delete_user(username):
+    """Remove the named user from the in-memory store and return to admin."""
     # Find the user object and remove it from the global list
     global USERS
     USERS = [user for user in USERS if user.username != username]
@@ -435,6 +465,7 @@ def delete_user(username):
 # SocketIO handler accepts raw audio, transcribes with STTTUTTTS, and broadcasts the transcript.
 @socketio.on("audio_stream")
 def handle_audio_stream(data):
+    """Transcribe the raw audio stream and emit the transcript back to the browser."""
     audio_bytes = bytearray(data)
     # Convert the audio stream into a transcript with our STTTUTTTS wrapper.
     text = STTTUTTTS.STTTUTTTS(audio_bytes)

@@ -10,6 +10,7 @@
 {% block content %}
     <!-- Main heading -->
     <h1>Tefilla</h1>
+    <!-- Choose a prayer to load its Hebrew text and transliteration for guided reading. -->
 
     <!-- Form to select which prayer to display -->
     <form method="get">
@@ -31,7 +32,6 @@
 
     <!-- Speed control for text-to-speech -->
     <div style="margin-top: 16px;">
-        <!-- Label for the speed slider -->
         <label for="wpm-slider">Words per minute:</label>
         <!-- Slider to control playback speed (60-300 words per minute) -->
         <input type="range" id="wpm-slider" min="60" max="300" value="120">
@@ -41,6 +41,7 @@
 
     <!-- Checkbox to show/hide transliteration -->
     <div style="margin-top: 12px;">
+        <!-- Optional checkbox to reveal the transliteration under each Hebrew line. -->
         <label for="show-transliteration">
             <!-- Checkbox input -->
             <input type="checkbox" id="show-transliteration">
@@ -51,7 +52,6 @@
 
     <!-- Playback control buttons -->
     <div style="margin-top: 12px;">
-        <!-- Button to pause/resume playback -->
         <button type="button" id="play-pause-button">Pause</button>
         <!-- Button to go back to the beginning and restart -->
         <button type="button" id="restart-button">Restart</button>
@@ -62,7 +62,6 @@
         <p>{{ error_message }}</p>
     {% endif %}
 
-    <!-- Container where the prayer text will be displayed -->
     <div id="prayer-reader" style="margin-top: 24px;"></div>
 
     <!-- JavaScript for prayer display and playback -->
@@ -93,11 +92,15 @@
         // Whether a word is currently being spoken
         let isSpeakingWord = false;
 
+        // Track which line and word the speech synthesizer is currently on.
+
         // Helper function to split text into words
         const getWords = (text) => text.split(/\s+/).filter(Boolean);
+        // Break a string into words while ignoring extra whitespace to highlight.
 
         // Function to render (display) the prayer text with highlighting
         function renderPrayer() {
+            // Redraw the prayer reader and emphasize the current word.
             // Clear the prayer reader container
             reader.innerHTML = "";
             // Loop through each line in the prayer
@@ -171,7 +174,6 @@
 
         // Move to the next word in the prayer
         function stepForward() {
-            // Do nothing if there are no prayer lines
             if (!prayerLines.length) return false;
             // Get words in the current line
             const currentLineWords = getWords(prayerLines[currentLineIndex].hebrew);
@@ -198,7 +200,6 @@
 
         // Stop playback and reset the button text
         function stopPlayback() {
-            // Clear any pending timers
             if (timerId !== null) {
                 clearTimeout(timerId);
                 timerId = null;
@@ -213,7 +214,6 @@
 
         // Speak the current word using the browser's text-to-speech
         function speakCurrentWord() {
-            // Do nothing if not playing or if already speaking
             if (!isPlaying || !prayerLines.length || isSpeakingWord) return;
             // Get words in the transliteration
             const transliterationWords = getWords(prayerLines[currentLineIndex].transliteration);
@@ -262,7 +262,6 @@
 
         // Start the prayer playback
         function startPlayback() {
-            // Do nothing if there are no prayer lines
             if (!prayerLines.length) return;
             // Clear any existing timers
             if (timerId !== null) {
@@ -284,7 +283,6 @@
 
         // Go back to the beginning and start over
         function restartPlayback() {
-            // Reset to first line and first word
             currentLineIndex = 0;
             currentWordIndex = 0;
             // Redisplay the prayer
@@ -295,9 +293,11 @@
 
         // Update the WPM label when slider changes
         const updateWpmLabel = () => wpmValue.textContent = wpmSlider.value;
+        // Keep the words-per-minute label in sync with the slider.
 
         // When user changes the speed slider, update label and restart playback
         wpmSlider.addEventListener("input", function () {
+            // Update the displayed speed and restart playback for the new pace.
             updateWpmLabel();
             if (isPlaying) startPlayback();
         });
@@ -331,6 +331,5 @@
         }
     </script>
 
-    <!-- Link back to the dashboard -->
     <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
 {% endblock %}

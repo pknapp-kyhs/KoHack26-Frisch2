@@ -5,6 +5,7 @@ import re
 
 # Function to fetch text from the Sefaria database (a free Jewish texts library)
 def sefaria_api(command):
+    """Fetch the Sefaria text for a query and return cleaned Hebrew and English snippets."""
     # Build the URL to request the text from Sefaria's API
     url = f"https://www.sefaria.org/api/texts/{command}?context=0"
     # Fetch the data from the URL and convert it to a Python dictionary

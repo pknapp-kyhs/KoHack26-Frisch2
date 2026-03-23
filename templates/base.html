@@ -66,6 +66,7 @@
     </style>
 </head>
 <body>
+    <!-- Toggle that switches the application into a dyslexia-friendly font set. -->
     <label class="toggle" for="dyslexia-toggle">
         <input type="checkbox" id="dyslexia-toggle">
         <span>Dyslexia-friendly font</span>
@@ -75,6 +76,7 @@
     {% endblock %}
 
     <script>
+        // Read the stored mode so we can apply it immediately when the page loads.
         const dyslexiaToggle = document.getElementById('dyslexia-toggle');
         const storedMode = localStorage.getItem('dyslexia-friendly-mode') === 'true';
 
@@ -86,6 +88,7 @@
 
         setDyslexiaMode(storedMode);
         dyslexiaToggle.addEventListener('change', function () {
+            // Persist the new preference whenever the toggle is changed.
             setDyslexiaMode(dyslexiaToggle.checked);
         });
     </script>

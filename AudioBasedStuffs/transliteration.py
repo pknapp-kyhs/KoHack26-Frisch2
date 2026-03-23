@@ -74,6 +74,7 @@ def transliterate(text):
     # This ensures longer keys are matched first (important for combined letters)
     def merge_sort(keys):
         # Base case: if list has 1 or fewer items, it's already sorted
+        """Sort keys so combinations come before single characters."""
         if len(keys) <= 1:
             return keys
         

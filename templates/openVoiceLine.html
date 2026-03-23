@@ -25,6 +25,7 @@
 
     <!-- JavaScript code for microphone and audio handling -->
     <script>
+        // Set up a raw Socket.IO connection for the voice demo playback.
         // Create socket connection to communicate with the Python backend
         const socket = io();
         let audioContext;  // Web Audio API context for processing microphone input
@@ -75,18 +76,13 @@
             else {
                 // Disconnect the processor
                 processor.disconnect();
-                // Disconnect the microphone
-                microphone.disconnect();
-                // Close the audio context
-                audioContext.close();
-                // Reset the audio context variable
-                audioContext = null;
-                // Update status to show we've stopped
-                document.getElementById('status').innerText = "Stopped";
+microphone.disconnect();
+audioContext.close();
+audioContext = null;
+document.getElementById('status').innerText = "Stopped";// Simple toggle to stop
             }
         };
 
-        // Listen for text result from the backend speech recognition
         socket.on('transcript_result', (text) => {
             // Display the recognized text to the user
             document.getElementById('output').innerText = text;

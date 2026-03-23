@@ -58,7 +58,7 @@ MISHEARD_COMMENTARIES= [
     "eben ezra",
     "even as or",
     "ibanez rough",
-    "evan as rough"
+    "evan as rough",
 ]
 
 # List of number words (so we can recognize "five" as a number, etc.)
@@ -113,9 +113,9 @@ BOOK_NAMES=[
     "eicha",
     "esther",
     "daniel",
-    "ezra" ,
-    "nechemia" ,
-    "divrei hayamim"
+    "ezra",
+    "nechemia",
+    "divrei hayamim",
 ]
 
 # Function to convert English words like "ten" into the number 10
@@ -272,8 +272,6 @@ def trim_noise(input_text):
             meaningful_idx = i
             # Stop searching - we found the start
             break
-
-    # Return the text starting from the first meaningful word
     return " ".join(words[meaningful_idx:])
 
 # Function to fix common speech recognition errors for commentary names

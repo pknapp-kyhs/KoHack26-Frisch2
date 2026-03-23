@@ -5,6 +5,7 @@ import SefariaAPIDispatchCommand
 
 # Main function that orchestrates the entire voice interaction
 def STTTUTTTS(data):
+    """Bridge the STT helper, Sefaria dispatch, and the TTS sink for a single audio chunk."""
     # Use speech-to-text to convert the user's voice input to text
     text=STT_TTS.listen(data)
     # Only proceed if we successfully heard something
@@ -20,6 +21,7 @@ def STTTUTTTS(data):
 
 # If this file is run directly (not imported), start the voice loop
 if __name__=='__main__':
+    # Loop forever when running this module for manual testing.
     # Loop forever, continuously listening for voice commands
     while True:
         STTTUTTTS()

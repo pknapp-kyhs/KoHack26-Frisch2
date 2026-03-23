@@ -6,6 +6,7 @@
 
 <!-- Everything below this shows up in the main content area -->
 {% block content %}
+    <!-- Encourage visitors to create an account for the accessibility suite. -->
     <!-- Main heading for the registration page -->
     <h1>Sign Up Now!</h1>
     
@@ -35,6 +36,7 @@
     
     <!-- Display any messages like "username already exists" error messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
+        <!-- Show success or validation errors raised during registration. -->
         {% if messages %}
             <!-- List to display all messages to the user -->
             <ul>
