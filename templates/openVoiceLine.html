@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Query</title>
+    <!-- Socket.IO Client Library -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Voice Search</h1>
+    <button id="recordBtn">Click to Ask (Mic)</button>
+    <p>Status: <span id="status">Idle</span></p>
+    <p>Text: <span id="output">...</span></p>
+
+    <script>
+        const socket = io();
+        let audioContext;
+        let processor;
+        let microphone;
+
+        async function startStreaming() {
+            document.getElementById('status').innerText = "Listening...";
+            
+            // 1. Get Mic Access
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // 2. Set up Audio Processing (16kHz for Vosk)
+            audioContext = new AudioContext({ sampleRate: 16000 });
+            microphone = audioContext.createMediaStreamSource(stream);
+            processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+            microphone.connect(processor);
+            processor.connect(audioContext.destination);
+
+            // 3. Convert and Send Loop
+            processor.onaudioprocess = (e) => {
+                const inputData = e.inputBuffer.getChannelData(0);
+                const pcmData = new Int16Array(inputData.length);
+                
+                // Convert Float32 to Int16
+                for (let i = 0; i < inputData.length; i++) {
+                    pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
+                }
+                
+                // Stream the raw bytes to Python
+                socket.emit('audio_stream', pcmData.buffer);
+            };
+        }
+
+        document.getElementById('recordBtn').onclick = () => {
+            if (!audioContext) {
+                startStreaming();
+            } else {
+                location.reload(); // Simple toggle to stop
+            }
+        };
+
+        socket.on('transcript_result', (text) => {
+            document.getElementById('output').innerText = text;
+            document.getElementById('status').innerText = "Done!";
+        });
+    </script>
+</body>
+</html>
