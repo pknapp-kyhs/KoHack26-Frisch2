@@ -18,7 +18,8 @@ def listen(recognizer, data):        #listens to mic and returns text
     try:
         if recognizer.AcceptWaveform(data):#if data is recognized
             result = recognizer.Result()#gets result from recognizer
-            text = json.loads(result)["text"]#extracts text from result
+            # Use .get() so a silent/noise chunk with no lattice path returns "" instead of raising KeyError
+            text = json.loads(result).get("text", "")
             if text:
                 print(f"[STT] Recognized: {text}")
                 return text
@@ -34,6 +35,8 @@ def listen(recognizer, data):        #listens to mic and returns text
         return None
     except Exception as e:
         print(f"[STT Error] {e}")
+        # Reset the recognizer so it can recover from a broken lattice state
+        recognizer.Reset()
         return None
 
 ### TTS initialization ###
