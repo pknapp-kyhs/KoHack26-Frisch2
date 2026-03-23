@@ -14,6 +14,7 @@
     <p>Status: <span id="status">Idle</span></p>
     <p>Text: <span id="output">...</span></p>
 
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         const socket = io();
         let audioContext;
@@ -21,8 +22,13 @@
         let microphone;
 
         async function startStreaming() {
-            document.getElementById('status').innerText = "Listening...";
+            const status = document.getElementById('status');
+            status.innerText = "Requesting microphone...";
             
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error("This browser does not support microphone access.");
+            }
+
             // 1. Get Mic Access
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             
@@ -33,6 +39,7 @@
 
             microphone.connect(processor);
             processor.connect(audioContext.destination);
+            status.innerText = "Listening...";
 
             // 3. Convert and Send Loop
             processor.onaudioprocess = (e) => {
@@ -49,9 +56,14 @@
             };
         }
 
-        document.getElementById('recordBtn').onclick = () => {
+        document.getElementById('recordBtn').onclick = async () => {
             if (!audioContext) {
-                startStreaming();
+                try {
+                    await startStreaming();
+                } catch (error) {
+                    document.getElementById('status').innerText = error.message || "Mic unavailable";
+                    console.error(error);
+                }
             } else {
                 location.reload(); // Simple toggle to stop
             }
