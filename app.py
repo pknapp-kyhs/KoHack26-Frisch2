@@ -170,9 +170,9 @@ def signup():
     return render_template("signup.html")
 
 
-@app.route("/braille/", methods=["GET", "POST"])
-def braille():
-    return render_template("braille.html")
+@app.route("/audio/", methods=["GET", "POST"])
+def audio():
+    return render_template("audio.html")
 
 
 @app.route("/texts/", methods=["GET", "POST"])
