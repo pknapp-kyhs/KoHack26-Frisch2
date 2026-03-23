@@ -67,7 +67,29 @@ def transliterate(text):
         return None
     text=text.replace('\u05d9\u05d4\u05d5\u05d4', "Hashem")
     # Sort keys by length descending to match combined characters (like Shin + dot) first
-    sorted_keys = sorted(HEBREW_PHONETIC_MAP.keys(), key=len, reverse=True)
+    def merge_sort(keys):
+        if len(keys) <= 1:
+            return keys
+        
+        mid = len(keys) // 2
+        left = merge_sort(keys[:mid])
+        right = merge_sort(keys[mid:])
+        
+        result = []
+        i = j = 0
+        while i < len(left) and j < len(right):
+            if len(left[i]) >= len(right[j]):
+                result.append(left[i])
+                i += 1
+            else:
+                result.append(right[j])
+                j += 1
+        
+        result.extend(left[i:])
+        result.extend(right[j:])
+        return result
+    
+    sorted_keys = merge_sort(list(HEBREW_PHONETIC_MAP.keys()))
     
     result = ""
     i = 0
