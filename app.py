@@ -257,11 +257,16 @@ def signin():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
+
+        
+
         if not username or not password:
             return _flash_and_redirect("Username and password are required.", "warning", "signin")
         if authenticate(username, password):
             session["username"] = username
             flash("Welcome back!", "success")
+            if username == "charles":
+                return redirect(url_for("admin"))
             return redirect(url_for("dashboard"))
 
         return _flash_and_redirect("Invalid username or password.", "error", "signin")
@@ -369,7 +374,7 @@ def delete_user(username):
     USERS = [user for user in USERS if user.username != username]
     
     # Send the admin back to the list page
-    return redirect(url_for('admin_panel'))
+    return redirect(url_for('admin'))
 
 
 @socketio.on("audio_stream")
