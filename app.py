@@ -244,4 +244,5 @@ def handle_audio(data):
     socketio.emit('transcript_result', text)
 
 # Run the Flask application on all interfaces at port 5050
-app.run(host="0.0.0.0",port=5050)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5050)
