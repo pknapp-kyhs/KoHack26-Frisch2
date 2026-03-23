@@ -19,6 +19,7 @@ import validate_passwd
 import requests
 
 from transliteration import transliterate
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Map supported English/Hebrew characters into Braille symbols for the converter page.
 braille_map = {
@@ -70,15 +71,15 @@ users = []
 socketio = SocketIO(app, cors_allowed_origins="*")
 class User:
     """
-    Represents a user with username and password.
+    Represents a user with username and hashed password.
     """
-    def __init__(self, username, password):
+    def __init__(self, username, password_hash):
         self.username = username
-        self.password = password
+        self.password_hash = password_hash
 
 
 def adduser(name, passwd):
-    user  = User(name, passwd)
+    user  = User(name, generate_password_hash(passwd))
     users.append(user)
 
 # Create a default user for testing
@@ -96,7 +97,7 @@ def validate(user, usn, pw):
     Returns:
         bool: True if credentials match, False otherwise.
     """
-    if user.username == usn and user.password == pw:
+    if user.username == usn and check_password_hash(user.password_hash, pw):
         return True
     else:
         return False
