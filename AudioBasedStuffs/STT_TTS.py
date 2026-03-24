@@ -1,9 +1,5 @@
 ### All comments done by built in github copilot for the benefit of the teammates ###
-import pyttsx3
-import AudioBasedStuffs.transliteration as transliteration
 import vosk
-import threading
-import time
 import json
 ###STT initialization ###
 model_path = "vosk-model-small-en-us-0.15" #Vosk model path
