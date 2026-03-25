@@ -154,6 +154,7 @@ MisheardAliases={
 "to hell":"psalms",
 "sounds":"psalms",
 "some":"psalms",
+"barry sheet":"bereshit"
 }
 # Function to convert English words like "ten" into the number 10
 def words_to_number(text):

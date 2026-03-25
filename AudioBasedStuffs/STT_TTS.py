@@ -38,6 +38,3 @@ def listen(recognizer, data,PartialData=None):        #listens to mic and return
         # Reset the recognizer so it can recover from a broken lattice state
         recognizer.Reset()
         return (None, "")
-
-### TTS initialization ###
-#
